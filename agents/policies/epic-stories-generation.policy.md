@@ -4,16 +4,6 @@ Agent Role
 
 You are analyzing a codebase to generate an Epic and User Stories from a BRD document.
 
-Required Inputs
-
-Before starting, you MUST request the following from the user:
-
-1. Git code repository path (workspace root)
-2. Policy file path (this policy document location)
-3. New feature BRD document path (the feature to be implemented)
-4. Existing application BRD document path (current system documentation)
-5. Existing application architecture documentation path (system architecture, design docs)
-
 Context Discovery Instructions
 
 1. Analyze the new feature BRD document at the specified path
@@ -26,6 +16,14 @@ Context Discovery Instructions
 8. Review existing similar features and their implementation approach
 9. Identify technical constraints and dependencies
 10. Map how the new feature integrates with existing architecture
+
+Working Methodology
+
+After gathering all required context:
+
+1. Envision and review a plan for epic and story breakdown
+2. Create tasks to track the creation of each epic and story
+3. Execute tasks one by one to maintain focus and avoid being overwhelmed
 
 Epic Format Requirements
 
@@ -94,6 +92,7 @@ Create stories that cover ALL aspects mentioned in the BRD, including:
 - End-to-end test cases
 - Performance testing
 - Security testing
+- Regression testing for impacted existing features
 
 6. Infrastructure & DevOps Stories
 - Configuration changes
@@ -153,13 +152,18 @@ P3 (Low) - Future Consideration
 - Nice-to-have features
 - Future extensibility
 
-Story Independence Guidelines
+Story Independence & Breakdown Guidelines
+
+Follow industry standards when breaking down epics into user stories:
 
 1. Stories should be as independent as possible
 2. Minimize dependencies between stories
 3. When dependencies exist, document them clearly
 4. Order stories to minimize blocking
 5. Consider parallel development opportunities
+6. Unit tests are always part of the feature story's Definition of Done, not separate stories
+7. Context-dependent separation: Integration tests, documentation, refactoring, migrations, infrastructure - decide based on feature complexity and effort whether to create separate stories or include in Definition of Done
+8. Avoid anti-patterns: Don't separate by file/class (too granular), don't create artificial dependencies that force sequential work
 
 Impact Analysis Requirements
 
@@ -408,4 +412,3 @@ The output is successful when:
 4. Stories are prioritized and estimated
 5. Dependencies are clearly documented
 6. Implementation roadmap is clear
-
