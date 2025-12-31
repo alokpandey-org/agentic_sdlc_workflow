@@ -27,32 +27,49 @@ After gathering all required context:
 
 Epic Format Requirements
 
-Generate ONE Epic with the following structure:
+Generate ONE Epic as a JSON object with the following structure:
 
-- Epic ID: EPIC-XXX (auto-generated sequential ID)
-- Epic Title: Clear, business-focused title (max 100 characters)
-- Epic Description: Comprehensive description of the feature (2-3 paragraphs)
-- Business Value: Why this matters to the business (quantifiable if possible)
-- Acceptance Criteria: High-level success criteria (3-5 criteria)
-- Dependencies: Technical and business dependencies
-- Estimated Effort: T-shirt sizing (S/M/L/XL)
-- Risk Assessment: Potential risks and mitigation strategies
-- Stakeholders: Who is impacted by this feature
+- title: Clear, business-focused title (max 100 characters)
+- description: Comprehensive markdown-formatted description including:
+  - Summary section
+  - Business Value section (why this matters, quantifiable if possible)
+  - Acceptance Criteria section (3-5 high-level success criteria as bullet points)
 
 User Story Format Requirements
 
-Generate MULTIPLE User Stories with the following structure for each:
+Generate User Stories as a JSON array, with each story having:
 
-- Story ID: STORY-XXX (auto-generated sequential ID)
-- Story Title: User-focused title (max 80 characters)
-- User Story: As a [role], I want [goal], so that [benefit]
-- Acceptance Criteria: Specific, testable criteria (3-7 criteria per story)
-- Technical Notes: Implementation guidance and technical considerations
-- Dependencies: Other stories or systems this depends on
-- Priority: P0 (Critical), P1 (High), P2 (Medium), P3 (Low)
-- Estimated Effort: Story points (1, 2, 3, 5, 8, 13) or hours
-- Test Strategy: How this should be tested (unit, integration, e2e)
-- Definition of Done: Clear completion criteria
+- title: User-focused title (max 80 characters)
+- description: Comprehensive markdown-formatted description including:
+  - User Story section (As a [role], I want [goal], so that [benefit])
+  - Acceptance Criteria section (3-7 specific, testable criteria as bullet points)
+  - Technical Notes section (implementation guidance, specific files/classes/APIs to modify)
+  - Test Strategy section (how to test: unit, integration, e2e)
+  - Definition of Done section (clear completion criteria as bullet points)
+- priority: JIRA priority value (see Priority Values section below)
+
+Story Ordering Requirements
+
+Stories MUST be ordered in the JSON array from 1 to N such that:
+1. Dependencies are satisfied when stories are executed sequentially
+2. Foundational stories (database schema, core APIs) come first
+3. Dependent stories (UI, integrations) come later
+
+Priority Values
+
+The priority field MUST use one of these exact JIRA priority values:
+
+- "Highest" - Critical/Blocker issues, foundational changes required for feature to work
+- "High" - Important features, must-have for release, core functionality
+- "Medium" - Standard features, should-have, enhancements
+- "Low" - Nice-to-have features, UI polish, optional improvements
+- "Lowest" - Future enhancements, technical debt, optional optimizations
+
+Priority Assignment Guidelines:
+
+- Use "Highest" or "High" for: Database schema changes, core API endpoints, breaking changes, security-critical changes
+- Use "Medium" for: Standard business logic, UI components, integrations, documentation
+- Use "Low" or "Lowest" for: UI polish, performance optimizations, nice-to-have features
 
 Story Coverage Requirements
 
@@ -125,32 +142,6 @@ Create stories that cover ALL aspects mentioned in the BRD, including:
 - Compliance checks
 - Audit logging
 - Data privacy considerations
-
-Story Prioritization Guidelines
-
-P0 (Critical) - Must Have
-- Core functionality required for feature to work
-- Database schema changes
-- Breaking API changes
-- Security-critical changes
-
-P1 (High) - Should Have
-- Important business logic
-- User-facing features
-- Integration with existing systems
-- Critical bug fixes
-
-P2 (Medium) - Nice to Have
-- Enhancements and optimizations
-- Additional validations
-- UI improvements
-- Documentation
-
-P3 (Low) - Future Consideration
-- Technical debt cleanup
-- Performance optimizations
-- Nice-to-have features
-- Future extensibility
 
 Story Independence & Breakdown Guidelines
 
@@ -306,63 +297,55 @@ Technical Considerations
 
 Output File Requirements
 
-Generate the following files in the output directory:
+Generate EXACTLY these 3 files in the output directory:
 
 1. epic.json
+
+A single JSON object with this structure:
+
 ```json
 {
-  "epic_id": "EPIC-001",
-  "title": "Epic Title",
-  "description": "Detailed description",
-  "business_value": "Business value statement",
-  "acceptance_criteria": ["Criteria 1", "Criteria 2"],
-  "dependencies": ["Dependency 1"],
-  "estimated_effort": "L",
-  "risk_assessment": "Risk analysis",
-  "stakeholders": ["Stakeholder 1"]
+  "title": "Multi-Warehouse Inventory Management System",
+  "description": "## Summary\n\nImplement comprehensive multi-warehouse inventory tracking system that allows tracking inventory across multiple warehouse locations with real-time synchronization.\n\n## Business Value\n\nEnables business expansion to multiple locations while maintaining centralized inventory visibility. Estimated to reduce inventory discrepancies by 40% and improve order fulfillment accuracy.\n\n## Acceptance Criteria\n\n- Support minimum 10 warehouse locations\n- Real-time inventory synchronization across warehouses\n- Transfer inventory between warehouses\n- Generate warehouse-specific inventory reports\n- Maintain audit trail of all inventory movements"
 }
 ```
 
+Key requirements for epic.json:
+- title: String, max 100 characters
+- description: String containing markdown with \n for newlines
+- Description must include: Summary, Business Value, and Acceptance Criteria sections
+- Use markdown formatting (##, -, etc.) within the description string
+
 2. stories.json
+
+A JSON array of story objects, ordered by dependency (foundational stories first):
+
 ```json
 [
   {
-    "story_id": "STORY-001",
-    "title": "Story Title",
-    "user_story": "As a [role], I want [goal], so that [benefit]",
-    "acceptance_criteria": ["AC1", "AC2"],
-    "technical_notes": "Implementation notes",
-    "dependencies": ["STORY-002"],
-    "priority": "P0",
-    "estimated_effort": 5,
-    "test_strategy": "Unit and integration tests",
-    "definition_of_done": ["DOD1", "DOD2"]
+    "title": "Create Warehouse Database Schema",
+    "description": "## User Story\n\nAs a system administrator, I want to define multiple warehouse locations in the system, so that inventory can be tracked separately for each location.\n\n## Acceptance Criteria\n\n- Create Warehouse model with fields: name, code, address, contact info, status\n- Add warehouse_id foreign key to inventory tables\n- Create database migration scripts with rollback support\n- Ensure backward compatibility with existing single-warehouse data\n- Add unique constraint on warehouse code\n\n## Technical Notes\n\n- Add warehouses table with columns: id, name, code, address, city, state, zip, country, contact_name, contact_phone, contact_email, status, created_at, updated_at\n- Modify inventory table to add warehouse_id column (nullable initially for migration)\n- Create indexes on warehouse_id for performance\n- Use database transactions for schema changes\n\n## Test Strategy\n\nUnit tests for model validation, integration tests for database constraints, migration tests for data integrity\n\n## Definition of Done\n\n- Database schema created and migrated\n- Model tests passing with >90% coverage\n- Migration tested on staging environment\n- Rollback procedure documented and tested",
+    "priority": "High"
+  },
+  {
+    "title": "...",
+    "description": "... in Markdown format",
+    "priority": "Medium"
   }
 ]
 ```
 
+Key requirements for stories.json:
+- Array of story objects, ordered by dependency (1 to N)
+- Each story has: title (string, max 80 chars), description (markdown string), priority (JIRA enum value)
+- Description must include: User Story, Acceptance Criteria, Technical Notes, Test Strategy, Definition of Done sections
+- Use markdown formatting (##, -, etc.) within the description string
+- Priority must be one of: "Highest", "High", "Medium", "Low", "Lowest"
+- Stories ordered so dependencies are satisfied sequentially (foundational first, dependent later)
+
 3. summary.md
-Human-readable summary with:
-- Epic overview
-- Prioritized backlog
-- Dependency visualization
-- Implementation roadmap
-- Risk summary
 
-4. dependencies.json
-```json
-{
-  "nodes": [
-    {"id": "STORY-001", "label": "Story Title"}
-  ],
-  "edges": [
-    {"from": "STORY-001", "to": "STORY-002"}
-  ]
-}
-```
-
-5. top-priority-story.json
-The highest priority story (P0, then P1, etc.) to implement first.
+Summary of the epic and stories in markdown format
 
 Quality Standards
 
@@ -385,14 +368,17 @@ Before finalizing, verify:
 - [ ] Existing functionality updates are included as stories
 - [ ] Regression testing stories are included
 - [ ] Data migration stories created if schema changes
-- [ ] Stories follow the specified format
-- [ ] Priorities are assigned correctly
-- [ ] Dependencies are documented
+- [ ] Stories follow the JSON format specified above
+- [ ] Priorities use exact JIRA values: "Highest", "High", "Medium", "Low", "Lowest"
+- [ ] Stories are ordered by dependency (foundational first)
+- [ ] No custom IDs (STORY-XXX, EPIC-XXX) are included
+- [ ] Descriptions are markdown-formatted strings with \n for newlines
 - [ ] Acceptance criteria are testable
-- [ ] Technical notes reference actual code
-- [ ] Effort estimates are reasonable
-- [ ] All required output files are generated
-- [ ] Summary is clear and actionable
+- [ ] Technical notes reference actual code files/classes/APIs
+- [ ] All 3 required output files are generated: epic.json, stories.json, summary.md
+- [ ] epic.json has title and description fields only
+- [ ] stories.json has title, description, and priority fields for each story
+- [ ] summary.md provides human-readable overview
 - [ ] Impact severity is classified for each affected component
 
 Error Handling
@@ -406,9 +392,13 @@ If the BRD is unclear or incomplete:
 Success Criteria
 
 The output is successful when:
-1. All required files are generated
-2. Epic and stories are well-formed
-3. All BRD requirements are addressed
-4. Stories are prioritized and estimated
-5. Dependencies are clearly documented
-6. Implementation roadmap is clear
+1. All 3 required files are generated: epic.json, stories.json, summary.md
+2. epic.json contains valid JSON with title and description fields
+3. stories.json contains valid JSON array with properly ordered stories
+4. Each story has title, description (markdown), and priority (JIRA enum value)
+5. All BRD requirements are addressed in the stories
+6. Stories are ordered by dependency (foundational to dependent)
+7. Priorities use exact JIRA values
+8. No custom IDs are included
+9. Descriptions use markdown formatting with \n for newlines
+10. summary.md provides clear implementation roadmap

@@ -87,11 +87,12 @@ create_jira_story() {
 	local story_title="$1"
 	local story_description="$2"
 	local epic_key="$3"
+	local priority="${4:-Medium}" # Default to Medium if not provided
 	local project_key="$JIRA_PROJECT_KEY"
 
 	# Remove newlines, trim whitespace, remove backticks, and properly escape for JSON using jq
 	story_title=$(echo -n "$story_title" | tr -d '\n\r`' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | jq -Rs '.' | sed 's/^"//' | sed 's/"$//' | cut -c1-255)
-	story_description=$(echo -n "$story_description" | tr -d '\n\r`' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | jq -Rs '.' | sed 's/^"//' | sed 's/"$//' | cut -c1-1000)
+	story_description=$(echo -n "$story_description" | tr -d '\n\r`' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | jq -Rs '.' | sed 's/^"//' | sed 's/"$//' | cut -c1-2000)
 
 	# Create JSON payload with parent field to link story to epic
 	local payload
@@ -121,6 +122,9 @@ create_jira_story() {
     },
     "issuetype": {
       "name": "Story"
+    },
+    "priority": {
+      "name": "$priority"
     },
     "parent": {
       "key": "$epic_key"
@@ -155,6 +159,9 @@ EOF
     },
     "issuetype": {
       "name": "Story"
+    },
+    "priority": {
+      "name": "$priority"
     }
   }
 }

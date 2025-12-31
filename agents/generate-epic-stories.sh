@@ -229,9 +229,10 @@ CONTEXT_INSTRUCTION="$CONTEXT_INSTRUCTION
 - Context Directories: $CONTEXT_DIRS
 - Output Directory: $EPIC_STORIES_DIR/
 
-IMPORTANT: Create the following files in markdown format:
-1. epic.md - Epic details with title, description, acceptance criteria
-2. stories.md - All user stories with titles, descriptions, acceptance criteria
+IMPORTANT: Create the following files in JSON format:
+1. epic.json - Epic with title and description (markdown) fields
+2. stories.json - Array of stories with title, description (markdown), and priority fields
+3. summary.md - Human-readable summary
 
 Begin analysis and generation now."
 
@@ -243,27 +244,72 @@ auggie -p \
 	--workspace-root "$WORKSPACE_ROOT" \
 	"$CONTEXT_INSTRUCTION"
 
-# Check if markdown files were generated
-if [ ! -f "$EPIC_STORIES_DIR/epic.md" ] || [ ! -f "$EPIC_STORIES_DIR/stories.md" ]; then
-	echo "Warning: Expected markdown files not found."
+# Check if JSON files were generated
+if [ ! -f "$EPIC_STORIES_DIR/epic.json" ] || [ ! -f "$EPIC_STORIES_DIR/stories.json" ]; then
+	echo "Error: Expected JSON files not found."
+	echo "Please ensure epic.json and stories.json are created in $EPIC_STORIES_DIR/"
+	exit 1
 fi
 
 echo ""
 echo "=========================================="
-echo "Epic and User Stories Generated"
+echo "Epic and User Stories Generated (JSON)"
 echo "=========================================="
 echo "Output location: $EPIC_STORIES_DIR/"
 echo ""
 
-# Display the generated files
-if [ -f "$EPIC_STORIES_DIR/epic.md" ]; then
-	echo "Epic file: $EPIC_STORIES_DIR/epic.md"
-fi
+# Convert JSON to Markdown for user review
+echo "Converting JSON to Markdown for review..."
+echo ""
 
-if [ -f "$EPIC_STORIES_DIR/stories.md" ]; then
-	echo "Stories file: $EPIC_STORIES_DIR/stories.md"
-fi
+# Generate epic.md from epic.json
+EPIC_TITLE=$(jq -r '.title' "$EPIC_STORIES_DIR/epic.json")
+EPIC_DESC=$(jq -r '.description' "$EPIC_STORIES_DIR/epic.json")
 
+cat >"$EPIC_STORIES_DIR/epic.md" <<EOF
+# $EPIC_TITLE
+
+$EPIC_DESC
+EOF
+
+echo "Created epic.md for review"
+
+# Generate stories.md from stories.json
+echo "# User Stories" >"$EPIC_STORIES_DIR/stories.md"
+echo "" >>"$EPIC_STORIES_DIR/stories.md"
+
+STORY_COUNT=$(jq 'length' "$EPIC_STORIES_DIR/stories.json")
+echo "Total Stories: $STORY_COUNT" >>"$EPIC_STORIES_DIR/stories.md"
+echo "" >>"$EPIC_STORIES_DIR/stories.md"
+
+# Iterate through stories and create markdown
+for i in $(seq 0 $((STORY_COUNT - 1))); do
+	STORY_NUM=$((i + 1))
+	STORY_TITLE=$(jq -r ".[$i].title" "$EPIC_STORIES_DIR/stories.json")
+	STORY_DESC=$(jq -r ".[$i].description" "$EPIC_STORIES_DIR/stories.json")
+	STORY_PRIORITY=$(jq -r ".[$i].priority" "$EPIC_STORIES_DIR/stories.json")
+
+	cat >>"$EPIC_STORIES_DIR/stories.md" <<EOF
+---
+
+## Story $STORY_NUM: $STORY_TITLE
+
+**Priority:** $STORY_PRIORITY
+
+$STORY_DESC
+
+EOF
+done
+
+echo "Created stories.md for review"
+echo ""
+
+echo "=========================================="
+echo "Review Files Generated"
+echo "=========================================="
+echo "Epic: $EPIC_STORIES_DIR/epic.md"
+echo "Stories: $EPIC_STORIES_DIR/stories.md"
+echo "Summary: $EPIC_STORIES_DIR/summary.md"
 echo ""
 echo "Please review the generated epic and stories at: $EPIC_STORIES_DIR/"
 echo ""
@@ -326,19 +372,15 @@ fi
 
 echo ""
 
-# Extract epic details from epic.md
-if [ -f "$EPIC_STORIES_DIR/epic.md" ]; then
-	EPIC_TITLE=$(grep -m 1 "^# " "$EPIC_STORIES_DIR/epic.md" | sed 's/^# //')
+# Extract epic details from epic.json
+if [ -f "$EPIC_STORIES_DIR/epic.json" ]; then
+	EPIC_TITLE=$(jq -r '.title' "$EPIC_STORIES_DIR/epic.json")
+	EPIC_DESCRIPTION=$(jq -r '.description' "$EPIC_STORIES_DIR/epic.json")
 
-	# Extract just the summary/description section (first 500 chars to avoid JSON issues)
-	EPIC_DESCRIPTION=$(sed -n '/## Summary/,/## /p' "$EPIC_STORIES_DIR/epic.md" | head -20 | tr '\n' ' ' | cut -c1-500)
-
-	# If no summary found, use first few lines
-	if [ -z "$EPIC_DESCRIPTION" ]; then
-		EPIC_DESCRIPTION=$(head -10 "$EPIC_STORIES_DIR/epic.md" | tr '\n' ' ' | cut -c1-500)
-	fi
+	# Convert markdown newlines to spaces for JIRA (simple text format)
+	EPIC_DESCRIPTION=$(echo "$EPIC_DESCRIPTION" | tr '\n' ' ' | cut -c1-1000)
 else
-	echo "Error: epic.md not found"
+	echo "Error: epic.json not found"
 	exit 1
 fi
 
@@ -354,75 +396,45 @@ fi
 echo "Epic created: $JIRA_BASE_URL/browse/$EPIC_KEY"
 echo ""
 
-# Parse and create user stories
-if [ -f "$EPIC_STORIES_DIR/stories.md" ]; then
+# Parse and create user stories from stories.json
+if [ -f "$EPIC_STORIES_DIR/stories.json" ]; then
 	CREATED_STORY_COUNT=0
-	CURRENT_STORY_ID=""
-	CURRENT_STORY_TITLE=""
-	CURRENT_STORY_DESC=""
+	STORY_COUNT=$(jq 'length' "$EPIC_STORIES_DIR/stories.json")
 
-	# Read stories.md line by line
-	while IFS= read -r line; do
-		# Check if this is a story header
-		if [[ "$line" =~ ^###\ STORY- ]]; then
-			# If we have a previous story, create it
-			if [ -n "$CURRENT_STORY_ID" ] && [ -n "$CURRENT_STORY_TITLE" ]; then
-				FULL_TITLE="$CURRENT_STORY_ID: $CURRENT_STORY_TITLE"
+	echo "Creating $STORY_COUNT stories in JIRA..."
+	echo ""
 
-				echo "Creating Story: $FULL_TITLE"
-				STORY_KEY=$(create_jira_story "$FULL_TITLE" "$CURRENT_STORY_DESC" "$EPIC_KEY")
-				if [ -n "$STORY_KEY" ]; then
-					echo "Story created: $JIRA_BASE_URL/browse/$STORY_KEY"
-					((CREATED_STORY_COUNT++))
-				else
-					echo "WARNING: Failed to create story: $FULL_TITLE"
-				fi
-			fi
+	# Iterate through stories array
+	for i in $(seq 0 $((STORY_COUNT - 1))); do
+		STORY_NUM=$((i + 1))
+		STORY_TITLE=$(jq -r ".[$i].title" "$EPIC_STORIES_DIR/stories.json")
+		STORY_DESC=$(jq -r ".[$i].description" "$EPIC_STORIES_DIR/stories.json")
+		STORY_PRIORITY=$(jq -r ".[$i].priority" "$EPIC_STORIES_DIR/stories.json")
 
-			# Start new story
-			CURRENT_STORY_ID=$(echo "$line" | sed 's/^### //')
-			CURRENT_STORY_TITLE=""
-			CURRENT_STORY_DESC=""
+		# Convert markdown newlines to spaces for JIRA (simple text format)
+		STORY_DESC=$(echo "$STORY_DESC" | tr '\n' ' ' | cut -c1-2000)
 
-		# Extract the title from **Title**: line and trim trailing whitespace
-		elif [[ "$line" =~ ^\*\*Title\*\*:\ (.+)$ ]]; then
-			CURRENT_STORY_TITLE=$(echo "${BASH_REMATCH[1]}" | sed 's/[[:space:]]*$//')
+		echo "Creating Story $STORY_NUM: $STORY_TITLE (Priority: $STORY_PRIORITY)"
+		STORY_KEY=$(create_jira_story "$STORY_TITLE" "$STORY_DESC" "$EPIC_KEY" "$STORY_PRIORITY")
 
-		# Skip separator lines and empty lines
-		elif [[ "$line" =~ ^---+$ ]] || [[ "$line" =~ ^[[:space:]]*$ ]]; then
-			continue
-
-		# Add other content to description
-		else
-			if [ -n "$CURRENT_STORY_ID" ]; then
-				CURRENT_STORY_DESC="$CURRENT_STORY_DESC $line"
-			fi
-		fi
-	done <"$EPIC_STORIES_DIR/stories.md"
-
-	# Create the last story
-	if [ -n "$CURRENT_STORY_ID" ] && [ -n "$CURRENT_STORY_TITLE" ]; then
-		FULL_TITLE="$CURRENT_STORY_ID: $CURRENT_STORY_TITLE"
-
-		echo "Creating Story: $FULL_TITLE"
-		STORY_KEY=$(create_jira_story "$FULL_TITLE" "$CURRENT_STORY_DESC" "$EPIC_KEY")
 		if [ -n "$STORY_KEY" ]; then
 			echo "Story created: $JIRA_BASE_URL/browse/$STORY_KEY"
 			((CREATED_STORY_COUNT++))
 		else
-			echo "WARNING: Failed to create story: $FULL_TITLE"
+			echo "WARNING: Failed to create story: $STORY_TITLE"
 		fi
-	fi
+		echo ""
+	done
 
 	echo ""
 	echo "=========================================="
 	echo "JIRA Creation Complete"
 	echo "=========================================="
 	echo "Epic: $JIRA_BASE_URL/browse/$EPIC_KEY"
-	echo "Stories created: $CREATED_STORY_COUNT"
+	echo "Stories created: $CREATED_STORY_COUNT / $STORY_COUNT"
 	echo "=========================================="
 else
-	echo "Error: stories.md not found"
+	echo "Error: stories.json not found"
 	exit 1
 fi
 
