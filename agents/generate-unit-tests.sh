@@ -11,7 +11,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Source environment variables
 if [ -f "$SCRIPT_DIR/.env" ]; then
-  source "$SCRIPT_DIR/.env"
+	source "$SCRIPT_DIR/.env"
 fi
 
 # Default values from environment or hardcoded
@@ -25,68 +25,68 @@ OUTPUT_DIR="sdlc-artifacts"
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
-  case $1 in
-    --pr-number)
-      PR_NUMBER="$2"
-      shift 2
-      ;;
-    --existing-app-brd)
-      EXISTING_APP_BRD="$2"
-      shift 2
-      ;;
-    --existing-app-arch)
-      EXISTING_APP_ARCH="$2"
-      shift 2
-      ;;
-    --workspace-root)
-      WORKSPACE_ROOT="$2"
-      shift 2
-      ;;
-    --context-dirs)
-      CONTEXT_DIRS="$2"
-      shift 2
-      ;;
-    --output-dir)
-      OUTPUT_DIR="$2"
-      shift 2
-      ;;
-    *)
-      echo "Unknown option: $1"
-      exit 1
-      ;;
-  esac
+	case $1 in
+	--pr-number)
+		PR_NUMBER="$2"
+		shift 2
+		;;
+	--existing-app-brd)
+		EXISTING_APP_BRD="$2"
+		shift 2
+		;;
+	--existing-app-arch)
+		EXISTING_APP_ARCH="$2"
+		shift 2
+		;;
+	--workspace-root)
+		WORKSPACE_ROOT="$2"
+		shift 2
+		;;
+	--context-dirs)
+		CONTEXT_DIRS="$2"
+		shift 2
+		;;
+	--output-dir)
+		OUTPUT_DIR="$2"
+		shift 2
+		;;
+	*)
+		echo "Unknown option: $1"
+		exit 1
+		;;
+	esac
 done
 
 # Validate required parameters
 if [ -z "$PR_NUMBER" ]; then
-  echo "Error: --pr-number is required"
-  exit 1
+	echo "Error: --pr-number is required"
+	exit 1
 fi
 
 # Validate optional files if provided
 if [ -n "$EXISTING_APP_BRD" ] && [ ! -f "$EXISTING_APP_BRD" ]; then
-  echo "Error: Existing application BRD file not found: $EXISTING_APP_BRD"
-  exit 1
+	echo "Error: Existing application BRD file not found: $EXISTING_APP_BRD"
+	exit 1
 fi
 
 if [ -n "$EXISTING_APP_ARCH" ] && [ ! -f "$EXISTING_APP_ARCH" ]; then
-  echo "Error: Existing application architecture file not found: $EXISTING_APP_ARCH"
-  exit 1
+	echo "Error: Existing application architecture file not found: $EXISTING_APP_ARCH"
+	exit 1
 fi
 
 # Clone Git repository if provided and repo directory doesn't exist
 if [ -n "$GIT_REPO" ]; then
-  REPO_DIR="$WORKSPACE_ROOT/Inventory-system"
-  if [ ! -d "$REPO_DIR" ]; then
-    echo "Cloning repository from $GIT_REPO to $REPO_DIR..."
-    git clone "$GIT_REPO" "$REPO_DIR"
-    echo "Repository cloned successfully."
-    echo ""
-  else
-    echo "Repository directory already exists: $REPO_DIR"
-    echo "Skipping git clone."
-    echo ""
-  fi
+	REPO_DIR="$WORKSPACE_ROOT/Inventory-system"
+	if [ ! -d "$REPO_DIR" ]; then
+		echo "Cloning repository from $GIT_REPO to $REPO_DIR..."
+		git clone "$GIT_REPO" "$REPO_DIR"
+		echo "Repository cloned successfully."
+		echo ""
+	else
+		echo "Repository directory already exists: $REPO_DIR"
+		echo "Skipping git clone."
+		echo ""
+	fi
 fi
 
 # Create output directory
@@ -110,8 +110,8 @@ POLICY_FILE="$SCRIPT_DIR/policies/unit-tests.policy.md"
 
 # Load policy file
 if [ ! -f "$POLICY_FILE" ]; then
-  echo "Error: Policy file not found: $POLICY_FILE"
-  exit 1
+	echo "Error: Policy file not found: $POLICY_FILE"
+	exit 1
 fi
 
 POLICY_CONTENT=$(cat "$POLICY_FILE")
@@ -126,12 +126,12 @@ EXECUTION CONTEXT:
 - Implementation Changes: $OUTPUT_DIR/implementation/changes-summary.md"
 
 if [ -n "$EXISTING_APP_BRD" ]; then
-  UNIT_TEST_INSTRUCTION="$UNIT_TEST_INSTRUCTION
+	UNIT_TEST_INSTRUCTION="$UNIT_TEST_INSTRUCTION
 - Existing Application BRD Path: $EXISTING_APP_BRD"
 fi
 
 if [ -n "$EXISTING_APP_ARCH" ]; then
-  UNIT_TEST_INSTRUCTION="$UNIT_TEST_INSTRUCTION
+	UNIT_TEST_INSTRUCTION="$UNIT_TEST_INSTRUCTION
 - Existing Application Architecture Path: $EXISTING_APP_ARCH"
 fi
 
@@ -151,17 +151,17 @@ echo "Running Auggie agent to generate unit test plans..."
 echo ""
 
 auggie -p \
-  --workspace-root "$WORKSPACE_ROOT" \
-  "$UNIT_TEST_INSTRUCTION" > "$OUTPUT_DIR/unit-tests/agent-output.txt"
+	--workspace-root "$WORKSPACE_ROOT" \
+	"$UNIT_TEST_INSTRUCTION" >"$OUTPUT_DIR/unit-tests/agent-output.txt"
 
 # Check if test plans were generated
 if [ ! -f "$OUTPUT_DIR/unit-tests/unit-test-plan.md" ]; then
-  echo "Warning: unit-test-plan.md not found, creating from agent output"
-  echo "# Unit Test Plan" > "$OUTPUT_DIR/unit-tests/unit-test-plan.md"
-  echo "" >> "$OUTPUT_DIR/unit-tests/unit-test-plan.md"
-  echo "PR: #$PR_NUMBER" >> "$OUTPUT_DIR/unit-tests/unit-test-plan.md"
-  echo "" >> "$OUTPUT_DIR/unit-tests/unit-test-plan.md"
-  cat "$OUTPUT_DIR/unit-tests/agent-output.txt" >> "$OUTPUT_DIR/unit-tests/unit-test-plan.md"
+	echo "Warning: unit-test-plan.md not found, creating from agent output"
+	echo "# Unit Test Plan" >"$OUTPUT_DIR/unit-tests/unit-test-plan.md"
+	echo "" >>"$OUTPUT_DIR/unit-tests/unit-test-plan.md"
+	echo "PR: #$PR_NUMBER" >>"$OUTPUT_DIR/unit-tests/unit-test-plan.md"
+	echo "" >>"$OUTPUT_DIR/unit-tests/unit-test-plan.md"
+	cat "$OUTPUT_DIR/unit-tests/agent-output.txt" >>"$OUTPUT_DIR/unit-tests/unit-test-plan.md"
 fi
 
 echo ""
@@ -177,9 +177,9 @@ echo "=========================================="
 
 # Display test plan
 if [ -f "$OUTPUT_DIR/unit-tests/unit-test-plan.md" ]; then
-  echo ""
-  echo "UNIT TEST PLAN:"
-  cat "$OUTPUT_DIR/unit-tests/unit-test-plan.md"
+	echo ""
+	echo "UNIT TEST PLAN:"
+	cat "$OUTPUT_DIR/unit-tests/unit-test-plan.md"
 fi
 
 # Pause for manual approval
@@ -192,9 +192,9 @@ echo ""
 read -p "Do you approve these test plans? (y/n): " APPROVAL
 
 if [ "$APPROVAL" != "y" ] && [ "$APPROVAL" != "Y" ]; then
-  echo ""
-  echo "Unit test generation cancelled by user."
-  exit 0
+	echo ""
+	echo "Unit test generation cancelled by user."
+	exit 0
 fi
 
 # Generate actual test code
@@ -213,12 +213,12 @@ EXECUTION CONTEXT:
 - Unit Test Plan: $OUTPUT_DIR/unit-tests/unit-test-plan.md"
 
 if [ -n "$EXISTING_APP_BRD" ]; then
-  TEST_CODE_INSTRUCTION="$TEST_CODE_INSTRUCTION
+	TEST_CODE_INSTRUCTION="$TEST_CODE_INSTRUCTION
 - Existing Application BRD Path: $EXISTING_APP_BRD"
 fi
 
 if [ -n "$EXISTING_APP_ARCH" ]; then
-  TEST_CODE_INSTRUCTION="$TEST_CODE_INSTRUCTION
+	TEST_CODE_INSTRUCTION="$TEST_CODE_INSTRUCTION
 - Existing Application Architecture Path: $EXISTING_APP_ARCH"
 fi
 
@@ -235,8 +235,8 @@ echo "Running Auggie agent to generate unit test code..."
 echo ""
 
 auggie -p \
-  --workspace-root "$WORKSPACE_ROOT" \
-  "$TEST_CODE_INSTRUCTION" > "$OUTPUT_DIR/unit-tests/code-generation-output.txt"
+	--workspace-root "$WORKSPACE_ROOT" \
+	"$TEST_CODE_INSTRUCTION" >"$OUTPUT_DIR/unit-tests/code-generation-output.txt"
 
 echo ""
 echo "=========================================="
@@ -254,8 +254,8 @@ cd "$WORKSPACE_ROOT"
 
 # Check if we're in a git repository
 if [ ! -d ".git" ]; then
-  echo "Error: Not a git repository. Skipping PR creation."
-  exit 1
+	echo "Error: Not a git repository. Skipping PR creation."
+	exit 1
 fi
 
 # Create branch name
@@ -292,57 +292,56 @@ git commit -m "$PR_TITLE" -m "$PR_BODY" || echo "No changes to commit"
 # Push branch to remote
 echo "Pushing branch to remote..."
 git push -u origin "$BRANCH_NAME" || {
-  echo "Error: Failed to push branch to remote"
-  exit 1
+	echo "Error: Failed to push branch to remote"
+	exit 1
 }
 
 # Detect default branch
 DEFAULT_BRANCH=$(git remote show origin | grep 'HEAD branch' | cut -d' ' -f5)
 if [ -z "$DEFAULT_BRANCH" ]; then
-  DEFAULT_BRANCH="main"
+	DEFAULT_BRANCH="main"
 fi
 
 echo "Default branch detected: $DEFAULT_BRANCH"
 
 # Create PR using GitHub CLI
 echo "Creating pull request..."
-if command -v gh &> /dev/null; then
-  gh pr create \
-    --title "$PR_TITLE" \
-    --body "$PR_BODY" \
-    --base "$DEFAULT_BRANCH" \
-    --head "$BRANCH_NAME" || {
-    echo "Error: Failed to create PR. You may need to create it manually."
-    echo "Branch pushed: $BRANCH_NAME"
-  }
+if command -v gh &>/dev/null; then
+	gh pr create \
+		--title "$PR_TITLE" \
+		--body "$PR_BODY" \
+		--base "$DEFAULT_BRANCH" \
+		--head "$BRANCH_NAME" || {
+		echo "Error: Failed to create PR. You may need to create it manually."
+		echo "Branch pushed: $BRANCH_NAME"
+	}
 
-  # Get PR details
-  TEST_PR_NUMBER=$(gh pr list --head "$BRANCH_NAME" --json number --jq '.[0].number')
-  TEST_PR_URL=$(gh pr list --head "$BRANCH_NAME" --json url --jq '.[0].url')
+	# Get PR details
+	TEST_PR_NUMBER=$(gh pr list --head "$BRANCH_NAME" --json number --jq '.[0].number')
+	TEST_PR_URL=$(gh pr list --head "$BRANCH_NAME" --json url --jq '.[0].url')
 
-  if [ -n "$TEST_PR_NUMBER" ]; then
-    echo ""
-    echo "=========================================="
-    echo "Pull Request Created Successfully!"
-    echo "=========================================="
-    echo "PR Number: #$TEST_PR_NUMBER"
-    echo "Branch: $BRANCH_NAME"
-    echo ""
-    echo "PR URL: $TEST_PR_URL"
-    echo "=========================================="
+	if [ -n "$TEST_PR_NUMBER" ]; then
+		echo ""
+		echo "=========================================="
+		echo "Pull Request Created Successfully!"
+		echo "=========================================="
+		echo "PR Number: #$TEST_PR_NUMBER"
+		echo "Branch: $BRANCH_NAME"
+		echo ""
+		echo "PR URL: $TEST_PR_URL"
+		echo "=========================================="
 
-    # Save PR details
-    echo "$TEST_PR_NUMBER" > "$OUTPUT_DIR/unit-tests/pr-number.txt"
-    echo "$TEST_PR_URL" > "$OUTPUT_DIR/unit-tests/pr-url.txt"
+		# Save PR details
+		echo "$TEST_PR_NUMBER" >"$OUTPUT_DIR/unit-tests/pr-number.txt"
+		echo "$TEST_PR_URL" >"$OUTPUT_DIR/unit-tests/pr-url.txt"
 
-    echo ""
-    echo "View Pull Request: $TEST_PR_URL"
-  fi
+		echo ""
+		echo "View Pull Request: $TEST_PR_URL"
+	fi
 else
-  echo "Warning: GitHub CLI (gh) not found. Please install it to create PRs automatically."
-  echo "Branch pushed: $BRANCH_NAME"
-  echo "Please create the PR manually at your repository."
+	echo "Warning: GitHub CLI (gh) not found. Please install it to create PRs automatically."
+	echo "Branch pushed: $BRANCH_NAME"
+	echo "Please create the PR manually at your repository."
 fi
 
 exit 0
-
