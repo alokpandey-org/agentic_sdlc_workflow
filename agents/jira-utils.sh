@@ -26,43 +26,26 @@ JIRA_API_URL="$JIRA_BASE_URL/rest/api/3"
 # Function to create an epic in JIRA
 create_jira_epic() {
 	local epic_title="$1"
-	local epic_description="$2"
+	local epic_description_adf="$2" # This is already ADF JSON
 	local project_key="$JIRA_PROJECT_KEY"
 
-	# Remove newlines, trim whitespace, and properly escape for JSON using jq
+	# Clean up title only (description is already ADF)
 	epic_title=$(echo -n "$epic_title" | tr -d '\n\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | jq -Rs '.' | sed 's/^"//' | sed 's/"$//')
-	epic_description=$(echo -n "$epic_description" | tr -d '\n\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | jq -Rs '.' | sed 's/^"//' | sed 's/"$//')
 
-	# Create JSON payload
+	# Create JSON payload using jq to properly embed the ADF description
 	local payload=$(
-		cat <<EOF
-{
-  "fields": {
-    "project": {
-      "key": "$project_key"
-    },
-    "summary": "$epic_title",
-    "description": {
-      "type": "doc",
-      "version": 1,
-      "content": [
-        {
-          "type": "paragraph",
-          "content": [
-            {
-              "type": "text",
-              "text": "$epic_description"
-            }
-          ]
-        }
-      ]
-    },
-    "issuetype": {
-      "name": "Epic"
-    }
-  }
-}
-EOF
+		jq -n \
+			--arg project_key "$project_key" \
+			--arg summary "$epic_title" \
+			--argjson description "$epic_description_adf" \
+			'{
+			"fields": {
+				"project": {"key": $project_key},
+				"summary": $summary,
+				"description": $description,
+				"issuetype": {"name": "Epic"}
+			}
+		}'
 	)
 
 	# Create the epic
@@ -85,87 +68,51 @@ EOF
 # Function to create a user story in JIRA
 create_jira_story() {
 	local story_title="$1"
-	local story_description="$2"
+	local story_description_adf="$2" # This is already ADF JSON
 	local epic_key="$3"
 	local priority="${4:-Medium}" # Default to Medium if not provided
 	local project_key="$JIRA_PROJECT_KEY"
 
-	# Remove newlines, trim whitespace, remove backticks, and properly escape for JSON using jq
+	# Clean up title only (description is already ADF)
 	story_title=$(echo -n "$story_title" | tr -d '\n\r`' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | jq -Rs '.' | sed 's/^"//' | sed 's/"$//' | cut -c1-255)
-	story_description=$(echo -n "$story_description" | tr -d '\n\r`' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | jq -Rs '.' | sed 's/^"//' | sed 's/"$//' | cut -c1-2000)
 
-	# Create JSON payload with parent field to link story to epic
+	# Create JSON payload using jq to properly embed the ADF description
 	local payload
 	if [ -n "$epic_key" ]; then
 		payload=$(
-			cat <<EOF
-{
-  "fields": {
-    "project": {
-      "key": "$project_key"
-    },
-    "summary": "$story_title",
-    "description": {
-      "type": "doc",
-      "version": 1,
-      "content": [
-        {
-          "type": "paragraph",
-          "content": [
-            {
-              "type": "text",
-              "text": "$story_description"
-            }
-          ]
-        }
-      ]
-    },
-    "issuetype": {
-      "name": "Story"
-    },
-    "priority": {
-      "name": "$priority"
-    },
-    "parent": {
-      "key": "$epic_key"
-    }
-  }
-}
-EOF
+			jq -n \
+				--arg project_key "$project_key" \
+				--arg summary "$story_title" \
+				--argjson description "$story_description_adf" \
+				--arg priority "$priority" \
+				--arg epic_key "$epic_key" \
+				'{
+				"fields": {
+					"project": {"key": $project_key},
+					"summary": $summary,
+					"description": $description,
+					"issuetype": {"name": "Story"},
+					"priority": {"name": $priority},
+					"parent": {"key": $epic_key}
+				}
+			}'
 		)
 	else
 		payload=$(
-			cat <<EOF
-{
-  "fields": {
-    "project": {
-      "key": "$project_key"
-    },
-    "summary": "$story_title",
-    "description": {
-      "type": "doc",
-      "version": 1,
-      "content": [
-        {
-          "type": "paragraph",
-          "content": [
-            {
-              "type": "text",
-              "text": "$story_description"
-            }
-          ]
-        }
-      ]
-    },
-    "issuetype": {
-      "name": "Story"
-    },
-    "priority": {
-      "name": "$priority"
-    }
-  }
-}
-EOF
+			jq -n \
+				--arg project_key "$project_key" \
+				--arg summary "$story_title" \
+				--argjson description "$story_description_adf" \
+				--arg priority "$priority" \
+				'{
+				"fields": {
+					"project": {"key": $project_key},
+					"summary": $summary,
+					"description": $description,
+					"issuetype": {"name": "Story"},
+					"priority": {"name": $priority}
+				}
+			}'
 		)
 	fi
 

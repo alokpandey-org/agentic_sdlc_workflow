@@ -10,6 +10,36 @@ set -e
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# Check for required command-line tools
+echo "Checking required command-line tools..."
+MISSING_TOOLS=0
+
+# Check for jq
+if ! command -v jq &>/dev/null; then
+	echo "ERROR: 'jq' is not installed"
+	echo "  jq is required for JSON processing"
+	echo "  Install jq and try again"
+	MISSING_TOOLS=1
+fi
+
+# Check for adf2md
+if ! command -v adf2md &>/dev/null; then
+	echo "ERROR: 'adf2md' is not installed"
+	echo "  adf2md is required for converting ADF to markdown"
+	echo "  Install from: https://github.com/carylee/adf2md"
+	echo "  Quick install: npm install -g @carylee/adf2md"
+	MISSING_TOOLS=1
+fi
+
+if [ $MISSING_TOOLS -eq 1 ]; then
+	echo ""
+	echo "Please install the missing tools and run this script again"
+	exit 1
+fi
+
+echo "All required tools found ✓"
+echo ""
+
 # Source environment variables
 if [ -f "$SCRIPT_DIR/.env" ]; then
 	source "$SCRIPT_DIR/.env"
@@ -230,9 +260,11 @@ CONTEXT_INSTRUCTION="$CONTEXT_INSTRUCTION
 - Output Directory: $EPIC_STORIES_DIR/
 
 IMPORTANT: Create the following files in JSON format:
-1. epic.json - Epic with title and description (markdown) fields
-2. stories.json - Array of stories with title, description (markdown), and priority fields
+1. epic.json - Epic with title and description (ADF JSON object) fields
+2. stories.json - Array of stories with title, description (ADF JSON object), and priority fields
 3. summary.md - Human-readable summary
+
+NOTE: Descriptions should be in Atlassian Document Format (ADF).
 
 Begin analysis and generation now."
 
@@ -258,18 +290,21 @@ echo "=========================================="
 echo "Output location: $EPIC_STORIES_DIR/"
 echo ""
 
-# Convert JSON to Markdown for user review
-echo "Converting JSON to Markdown for review..."
+# Convert ADF to Markdown for user review
+echo "Converting ADF to Markdown for review..."
 echo ""
 
-# Generate epic.md from epic.json
+# Generate epic.md from epic.json (convert ADF to markdown)
 EPIC_TITLE=$(jq -r '.title' "$EPIC_STORIES_DIR/epic.json")
-EPIC_DESC=$(jq -r '.description' "$EPIC_STORIES_DIR/epic.json")
+EPIC_DESC_ADF=$(jq -c '.description' "$EPIC_STORIES_DIR/epic.json")
+
+# Convert ADF to markdown using adf2md
+EPIC_DESC_MD=$(echo "$EPIC_DESC_ADF" | adf2md)
 
 cat >"$EPIC_STORIES_DIR/epic.md" <<EOF
 # $EPIC_TITLE
 
-$EPIC_DESC
+$EPIC_DESC_MD
 EOF
 
 echo "Created epic.md for review"
@@ -282,12 +317,15 @@ STORY_COUNT=$(jq 'length' "$EPIC_STORIES_DIR/stories.json")
 echo "Total Stories: $STORY_COUNT" >>"$EPIC_STORIES_DIR/stories.md"
 echo "" >>"$EPIC_STORIES_DIR/stories.md"
 
-# Iterate through stories and create markdown
+# Iterate through stories and create markdown (convert ADF to markdown)
 for i in $(seq 0 $((STORY_COUNT - 1))); do
 	STORY_NUM=$((i + 1))
 	STORY_TITLE=$(jq -r ".[$i].title" "$EPIC_STORIES_DIR/stories.json")
-	STORY_DESC=$(jq -r ".[$i].description" "$EPIC_STORIES_DIR/stories.json")
+	STORY_DESC_ADF=$(jq -c ".[$i].description" "$EPIC_STORIES_DIR/stories.json")
 	STORY_PRIORITY=$(jq -r ".[$i].priority" "$EPIC_STORIES_DIR/stories.json")
+
+	# Convert ADF to markdown using adf2md
+	STORY_DESC_MD=$(echo "$STORY_DESC_ADF" | adf2md)
 
 	cat >>"$EPIC_STORIES_DIR/stories.md" <<EOF
 ---
@@ -296,7 +334,7 @@ for i in $(seq 0 $((STORY_COUNT - 1))); do
 
 **Priority:** $STORY_PRIORITY
 
-$STORY_DESC
+$STORY_DESC_MD
 
 EOF
 done
@@ -375,10 +413,8 @@ echo ""
 # Extract epic details from epic.json
 if [ -f "$EPIC_STORIES_DIR/epic.json" ]; then
 	EPIC_TITLE=$(jq -r '.title' "$EPIC_STORIES_DIR/epic.json")
-	EPIC_DESCRIPTION=$(jq -r '.description' "$EPIC_STORIES_DIR/epic.json")
-
-	# Convert markdown newlines to spaces for JIRA (simple text format)
-	EPIC_DESCRIPTION=$(echo "$EPIC_DESCRIPTION" | tr '\n' ' ' | cut -c1-1000)
+	# Extract ADF description as JSON string (no conversion needed)
+	EPIC_DESCRIPTION=$(jq -c '.description' "$EPIC_STORIES_DIR/epic.json")
 else
 	echo "Error: epic.json not found"
 	exit 1
@@ -408,18 +444,16 @@ if [ -f "$EPIC_STORIES_DIR/stories.json" ]; then
 	for i in $(seq 0 $((STORY_COUNT - 1))); do
 		STORY_NUM=$((i + 1))
 		STORY_TITLE=$(jq -r ".[$i].title" "$EPIC_STORIES_DIR/stories.json")
-		STORY_DESC=$(jq -r ".[$i].description" "$EPIC_STORIES_DIR/stories.json")
+		# Extract ADF description as JSON string (no conversion needed)
+		STORY_DESC=$(jq -c ".[$i].description" "$EPIC_STORIES_DIR/stories.json")
 		STORY_PRIORITY=$(jq -r ".[$i].priority" "$EPIC_STORIES_DIR/stories.json")
-
-		# Convert markdown newlines to spaces for JIRA (simple text format)
-		STORY_DESC=$(echo "$STORY_DESC" | tr '\n' ' ' | cut -c1-2000)
 
 		echo "Creating Story $STORY_NUM: $STORY_TITLE (Priority: $STORY_PRIORITY)"
 		STORY_KEY=$(create_jira_story "$STORY_TITLE" "$STORY_DESC" "$EPIC_KEY" "$STORY_PRIORITY")
 
 		if [ -n "$STORY_KEY" ]; then
 			echo "Story created: $JIRA_BASE_URL/browse/$STORY_KEY"
-			((CREATED_STORY_COUNT++))
+			CREATED_STORY_COUNT=$((CREATED_STORY_COUNT + 1))
 		else
 			echo "WARNING: Failed to create story: $STORY_TITLE"
 		fi

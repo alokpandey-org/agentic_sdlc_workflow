@@ -30,22 +30,22 @@ Epic Format Requirements
 Generate ONE Epic as a JSON object with the following structure:
 
 - title: Clear, business-focused title (max 100 characters)
-- description: Comprehensive markdown-formatted description including:
-  - Summary section
-  - Business Value section (why this matters, quantifiable if possible)
-  - Acceptance Criteria section (3-5 high-level success criteria as bullet points)
+- description: Comprehensive description in Atlassian Document Format (ADF) including:
+  - Summary section (as heading level 2)
+  - Business Value section (as heading level 2, why this matters, quantifiable if possible)
+  - Acceptance Criteria section (as heading level 2, with 3-5 high-level success criteria as bullet list)
 
 User Story Format Requirements
 
 Generate User Stories as a JSON array, with each story having:
 
 - title: User-focused title (max 80 characters)
-- description: Comprehensive markdown-formatted description including:
-  - User Story section (As a [role], I want [goal], so that [benefit])
-  - Acceptance Criteria section (3-7 specific, testable criteria as bullet points)
-  - Technical Notes section (implementation guidance, specific files/classes/APIs to modify)
-  - Test Strategy section (how to test: unit, integration, e2e)
-  - Definition of Done section (clear completion criteria as bullet points)
+- description: Comprehensive description in Atlassian Document Format (ADF) including:
+  - User Story section (as heading level 2, with "As a [role], I want [goal], so that [benefit]" as paragraph)
+  - Acceptance Criteria section (as heading level 2, with 3-7 specific, testable criteria as bullet list)
+  - Technical Notes section (as heading level 2, implementation guidance, specific files/classes/APIs to modify as bullet list)
+  - Test Strategy section (as heading level 2, how to test: unit, integration, e2e as bullet list)
+  - Definition of Done section (as heading level 2, clear completion criteria as bullet list)
 - priority: JIRA priority value (see Priority Values section below)
 
 Story Ordering Requirements
@@ -301,45 +301,108 @@ Generate EXACTLY these 3 files in the output directory:
 
 1. epic.json
 
-A single JSON object with this structure:
+A single JSON object with title and description in Atlassian Document Format (ADF):
 
 ```json
 {
   "title": "Multi-Warehouse Inventory Management System",
-  "description": "## Summary\n\nImplement comprehensive multi-warehouse inventory tracking system that allows tracking inventory across multiple warehouse locations with real-time synchronization.\n\n## Business Value\n\nEnables business expansion to multiple locations while maintaining centralized inventory visibility. Estimated to reduce inventory discrepancies by 40% and improve order fulfillment accuracy.\n\n## Acceptance Criteria\n\n- Support minimum 10 warehouse locations\n- Real-time inventory synchronization across warehouses\n- Transfer inventory between warehouses\n- Generate warehouse-specific inventory reports\n- Maintain audit trail of all inventory movements"
+  "description": {
+    "type": "doc",
+    "version": 1,
+    "content": [
+      {
+        "type": "heading",
+        "attrs": {"level": 2},
+        "content": [{"type": "text", "text": "Summary"}]
+      },
+      {
+        "type": "paragraph",
+        "content": [{"type": "text", "text": "Implement comprehensive multi-warehouse inventory tracking system that allows tracking inventory across multiple warehouse locations with real-time synchronization."}]
+      },
+      {
+        "type": "heading",
+        "attrs": {"level": 2},
+        "content": [{"type": "text", "text": "Business Value"}]
+      },
+      {
+        "type": "paragraph",
+        "content": [{"type": "text", "text": "Enables business expansion to multiple locations while maintaining centralized inventory visibility. Estimated to reduce inventory discrepancies by 40% and improve order fulfillment accuracy."}]
+      },
+      {
+        "type": "heading",
+        "attrs": {"level": 2},
+        "content": [{"type": "text", "text": "Acceptance Criteria"}]
+      },
+      {
+        "type": "bulletList",
+        "content": [
+          {"type": "listItem", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Support minimum 10 warehouse locations"}]}]},
+          {"type": "listItem", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Real-time inventory synchronization across warehouses"}]}]},
+          {"type": "listItem", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Transfer inventory between warehouses"}]}]},
+          {"type": "listItem", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Generate warehouse-specific inventory reports"}]}]},
+          {"type": "listItem", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Maintain audit trail of all inventory movements"}]}]}
+        ]
+      }
+    ]
+  }
 }
 ```
 
 Key requirements for epic.json:
 - title: String, max 100 characters
-- description: String containing markdown with \n for newlines
-- Description must include: Summary, Business Value, and Acceptance Criteria sections
-- Use markdown formatting (##, -, etc.) within the description string
+- description: ADF JSON object (NOT a string)
+- Description must be valid ADF with type="doc", version=1, and content array
+- Description must include: Summary (heading + paragraph), Business Value (heading + paragraph), and Acceptance Criteria (heading + bulletList) sections
+- Use proper ADF node types: heading, paragraph, bulletList, listItem, text
 
 2. stories.json
 
-A JSON array of story objects, ordered by dependency (foundational stories first):
+A JSON array of story objects, ordered by dependency (foundational stories first). Each story description MUST be in Atlassian Document Format (ADF):
 
 ```json
 [
   {
     "title": "Create Warehouse Database Schema",
-    "description": "## User Story\n\nAs a system administrator, I want to define multiple warehouse locations in the system, so that inventory can be tracked separately for each location.\n\n## Acceptance Criteria\n\n- Create Warehouse model with fields: name, code, address, contact info, status\n- Add warehouse_id foreign key to inventory tables\n- Create database migration scripts with rollback support\n- Ensure backward compatibility with existing single-warehouse data\n- Add unique constraint on warehouse code\n\n## Technical Notes\n\n- Add warehouses table with columns: id, name, code, address, city, state, zip, country, contact_name, contact_phone, contact_email, status, created_at, updated_at\n- Modify inventory table to add warehouse_id column (nullable initially for migration)\n- Create indexes on warehouse_id for performance\n- Use database transactions for schema changes\n\n## Test Strategy\n\nUnit tests for model validation, integration tests for database constraints, migration tests for data integrity\n\n## Definition of Done\n\n- Database schema created and migrated\n- Model tests passing with >90% coverage\n- Migration tested on staging environment\n- Rollback procedure documented and tested",
+    "description": {
+      "type": "doc",
+      "version": 1,
+      "content": [
+        {"type": "heading", "attrs": {"level": 2}, "content": [{"type": "text", "text": "User Story"}]},
+        {"type": "paragraph", "content": [{"type": "text", "text": "As a system administrator, I want to define multiple warehouse locations in the system, so that inventory can be tracked separately for each location."}]},
+        {"type": "heading", "attrs": {"level": 2}, "content": [{"type": "text", "text": "Acceptance Criteria"}]},
+        {"type": "bulletList", "content": [
+          {"type": "listItem", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Create Warehouse model with fields: name, code, address, contact info, status"}]}]},
+          {"type": "listItem", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Add warehouse_id foreign key to inventory tables"}]}]},
+          {"type": "listItem", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Create database migration scripts with rollback support"}]}]}
+        ]},
+        {"type": "heading", "attrs": {"level": 2}, "content": [{"type": "text", "text": "Technical Notes"}]},
+        {"type": "bulletList", "content": [
+          {"type": "listItem", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Add warehouses table with required columns"}]}]},
+          {"type": "listItem", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Modify inventory table to add warehouse_id column"}]}]}
+        ]},
+        {"type": "heading", "attrs": {"level": 2}, "content": [{"type": "text", "text": "Test Strategy"}]},
+        {"type": "bulletList", "content": [
+          {"type": "listItem", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Unit tests for model validation"}]}]},
+          {"type": "listItem", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Integration tests for database constraints"}]}]}
+        ]},
+        {"type": "heading", "attrs": {"level": 2}, "content": [{"type": "text", "text": "Definition of Done"}]},
+        {"type": "bulletList", "content": [
+          {"type": "listItem", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Database schema created and migrated"}]}]},
+          {"type": "listItem", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Model tests passing with >90% coverage"}]}]}
+        ]}
+      ]
+    },
     "priority": "High"
-  },
-  {
-    "title": "...",
-    "description": "... in Markdown format",
-    "priority": "Medium"
   }
 ]
 ```
 
 Key requirements for stories.json:
 - Array of story objects, ordered by dependency (1 to N)
-- Each story has: title (string, max 80 chars), description (markdown string), priority (JIRA enum value)
-- Description must include: User Story, Acceptance Criteria, Technical Notes, Test Strategy, Definition of Done sections
-- Use markdown formatting (##, -, etc.) within the description string
+- Each story has: title (string, max 80 chars), description (ADF JSON object), priority (JIRA enum value)
+- Description must be valid ADF with type="doc", version=1, and content array
+- Description must include: User Story (heading + paragraph), Acceptance Criteria (heading + bulletList), Technical Notes (heading + bulletList), Test Strategy (heading + bulletList), Definition of Done (heading + bulletList) sections
+- Use proper ADF node types: heading, paragraph, bulletList, listItem, text
 - Priority must be one of: "Highest", "High", "Medium", "Low", "Lowest"
 - Stories ordered so dependencies are satisfied sequentially (foundational first, dependent later)
 
@@ -372,12 +435,12 @@ Before finalizing, verify:
 - [ ] Priorities use exact JIRA values: "Highest", "High", "Medium", "Low", "Lowest"
 - [ ] Stories are ordered by dependency (foundational first)
 - [ ] No custom IDs (STORY-XXX, EPIC-XXX) are included
-- [ ] Descriptions are markdown-formatted strings with \n for newlines
+- [ ] Descriptions are ADF JSON objects (NOT markdown strings)
 - [ ] Acceptance criteria are testable
 - [ ] Technical notes reference actual code files/classes/APIs
 - [ ] All 3 required output files are generated: epic.json, stories.json, summary.md
-- [ ] epic.json has title and description fields only
-- [ ] stories.json has title, description, and priority fields for each story
+- [ ] epic.json has title and description (ADF) fields only
+- [ ] stories.json has title, description (ADF), and priority fields for each story
 - [ ] summary.md provides human-readable overview
 - [ ] Impact severity is classified for each affected component
 
@@ -393,12 +456,12 @@ Success Criteria
 
 The output is successful when:
 1. All 3 required files are generated: epic.json, stories.json, summary.md
-2. epic.json contains valid JSON with title and description fields
+2. epic.json contains valid JSON with title and description (ADF) fields
 3. stories.json contains valid JSON array with properly ordered stories
-4. Each story has title, description (markdown), and priority (JIRA enum value)
+4. Each story has title, description (ADF JSON object), and priority (JIRA enum value)
 5. All BRD requirements are addressed in the stories
 6. Stories are ordered by dependency (foundational to dependent)
 7. Priorities use exact JIRA values
 8. No custom IDs are included
-9. Descriptions use markdown formatting with \n for newlines
+9. Descriptions use ADF format (NOT markdown strings)
 10. summary.md provides clear implementation roadmap

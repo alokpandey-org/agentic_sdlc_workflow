@@ -19,6 +19,43 @@ echo "Environment Setup for SDLC Agents"
 echo "=========================================="
 echo ""
 
+# Check for required command-line tools
+echo "Checking required command-line tools..."
+echo ""
+
+MISSING_TOOLS=0
+
+# Check for jq
+if ! command -v jq &>/dev/null; then
+	echo "❌ ERROR: 'jq' is not installed"
+	echo "   jq is required for JSON processing"
+	echo "   Install it with: brew install jq (macOS) or apt-get install jq (Linux)"
+	MISSING_TOOLS=1
+else
+	echo "✓ jq found: $(command -v jq)"
+fi
+
+# Check for adf2md
+if ! command -v adf2md &>/dev/null; then
+	echo "❌ ERROR: 'adf2md' is not installed"
+	echo "   adf2md is required for converting ADF to markdown"
+	echo "   Install it from: https://github.com/carylee/adf2md"
+	MISSING_TOOLS=1
+else
+	echo "✓ adf2md found: $(command -v adf2md)"
+fi
+
+echo ""
+
+if [ $MISSING_TOOLS -eq 1 ]; then
+	echo "ERROR: Missing required command-line tools"
+	echo "Please install the missing tools and run this script again"
+	exit 1
+fi
+
+echo "All required command-line tools are installed ✓"
+echo ""
+
 # Check if .env file exists and source it
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [ -f "$SCRIPT_DIR/.env" ]; then
