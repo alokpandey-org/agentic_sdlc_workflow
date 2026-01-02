@@ -27,9 +27,10 @@ After gathering all required context:
 
 1. Create a comprehensive implementation plan breaking down the work into logical tasks
 2. Use task management tools to track each task
-3. Execute tasks one by one to maintain focus and avoid being overwhelmed
-4. Complete each task fully before moving to the next
-5. Validate each completed task against acceptance criteria
+3. Once the task list is ready, check if something is out of scope of the JIRA ticket. If so, remove those tasks from the list.
+4. Execute tasks one by one to maintain focus and avoid being overwhelmed
+5. Complete each task fully before moving to the next
+6. Validate each completed task against acceptance criteria
 
 ## Implementation Requirements
 
@@ -58,35 +59,25 @@ After gathering all required context:
 #### What to Implement
 
 1. **Core Functionality**: All features described in the user story
-2. **Database Changes**: Migrations, models, schema updates
-3. **API Changes**: New endpoints, request/response schemas, versioning
-4. **Business Logic**: Calculations, validations, state management
-5. **Configuration**: Environment variables, settings, feature flags
-6. **Documentation**: Code comments, API docs, README updates
-7. **Error Handling**: Graceful error handling and user-friendly messages
-8. **Logging**: Appropriate log levels and messages
+2. **Error Handling**: Graceful error handling and user-friendly messages
+3. **Logging**: Appropriate log levels and messages
 
 #### What NOT to Implement
 
 1. **Tests**: Tests will be generated in a separate step
-2. **Unrelated Features**: Stay focused on the user story
+2. **Unrelated Features**: Stay focused on the user story. Assume that anything not explicitly mentioned in the user story is out of scope.
 3. **Premature Optimization**: Don't optimize unless needed
 4. **Breaking Changes**: Avoid unless explicitly required
 
-### Database Changes
+### Ticket related to Database Changes
 
-If database changes are needed:
+1. **Backward Compatible**: Ensure migrations can be rolled back (if migrations are part of this ticket)
+2. **Data Migration**: Include data migration if needed
+3. **Indexes**: Add appropriate indexes for performance
+4. **Constraints**: Add necessary constraints and validations
+5. **Documentation**: Document schema changes
 
-1. **Create Migrations**: Generate proper migration scripts
-2. **Backward Compatible**: Ensure migrations can be rolled back
-3. **Data Migration**: Include data migration if needed
-4. **Indexes**: Add appropriate indexes for performance
-5. **Constraints**: Add necessary constraints and validations
-6. **Documentation**: Document schema changes
-
-### API Changes
-
-If API changes are needed:
+### Ticket related to API Changes
 
 1. **Impact Analysis**: Identify all existing API consumers and affected endpoints
 2. **Breaking Changes Detection**: Determine if changes break existing API contracts
@@ -110,9 +101,7 @@ If API changes are needed:
    - Add deprecation warnings in responses
    - Communicate timeline to API consumers
 
-### Configuration Changes
-
-If configuration changes are needed:
+### Ticket related to Configuration Changes
 
 1. **Environment Variables**: Add new environment variables with defaults
 2. **Configuration Files**: Update configuration files
@@ -340,69 +329,6 @@ The body should include:
 - Rollback Plan section with rollback steps
 - Checklist section with review items
 
-Example body content structure:
-
-```markdown
-## User Story
-
-STORY-123: Add user authentication
-
-As a user, I want to log in securely, so that my data is protected
-
-## Implementation
-
-Implemented JWT-based authentication with refresh tokens
-
-## Changes
-
-- Added authentication middleware
-- Created login/logout endpoints
-- Implemented token refresh mechanism
-
-## Database Changes
-
-- Migration: 001_add_users_table.sql
-- Tables: users (created), sessions (created)
-
-## API Changes
-
-- New endpoints: POST /api/auth/login, POST /api/auth/logout, POST /api/auth/refresh
-- Breaking changes: None
-
-## Testing
-
-- [ ] Unit tests (to be added in next step)
-- [ ] Integration tests (to be added in next step)
-- [x] Manual testing completed
-
-## Acceptance Criteria
-
-- [x] Users can log in with email and password
-- [x] JWT tokens are generated on successful login
-- [x] Tokens expire after configured time
-- [x] Refresh tokens work correctly
-
-## Migration Guide
-
-1. Run database migrations: `npm run migrate`
-2. Update environment variables: Add JWT_SECRET
-3. Restart services
-
-## Rollback Plan
-
-1. Revert database migrations: `npm run migrate:rollback`
-2. Remove JWT_SECRET from environment
-3. Redeploy previous version
-
-## Checklist
-
-- [x] Code follows project conventions
-- [x] Documentation updated
-- [x] No breaking changes
-- [ ] Tests added (next step)
-- [x] Ready for review
-```
-
 ## Code Style Guidelines
 
 ### Python
@@ -428,20 +354,6 @@ Implemented JWT-based authentication with refresh tokens
 - Add blank lines between logical sections
 - Group imports logically
 - Remove unused imports and variables
-
-## Commit Message Format
-
-Follow conventional commits:
-
-```
-feat(scope): brief description
-
-Detailed description of changes
-
-BREAKING CHANGE: description of breaking change (if any)
-
-Closes STORY-XXX
-```
 
 ## Validation Checklist
 
@@ -475,7 +387,5 @@ The implementation is successful when:
 2. Code follows project conventions
 3. No breaking changes (unless required)
 4. Error handling is comprehensive
-5. Documentation is complete
-6. Migration steps are clear
-7. Rollback procedure is defined
-8. Changes are focused and minimal
+5. Changes are focused and are in scope of the user story
+6. All required output files are generated
