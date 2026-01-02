@@ -3,30 +3,41 @@
 # Agent 2: Implementation Generator
 # This is a generic agent that generates code implementation for a user story
 # It discovers context from the codebase and generates a complete implementation
+# Supports interactive (-i) and non-interactive modes
 
 set -e
 
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# Source environment variables
+if [ -f "$SCRIPT_DIR/.env" ]; then
+	source "$SCRIPT_DIR/.env"
+fi
+
 # Source JIRA utilities
 source "$SCRIPT_DIR/jira-utils.sh"
 
-# Default values
-WORKSPACE_ROOT=""
+# Default values from environment or hardcoded
+WORKSPACE_ROOT="${DEMO_WORKSPACE_ROOT:-}"
 JIRA_TICKET_ID=""
 EPIC_ID=""
-EXISTING_APP_BRD=""
-EXISTING_APP_ARCH=""
+EXISTING_APP_BRD="${DEMO_EXISTING_APP_BRD:-}"
+EXISTING_APP_ARCH="${DEMO_EXISTING_APP_ARCH:-}"
 NEW_BRD=""
-GIT_REPO=""
+GIT_REPO="${DEMO_GIT_REPO:-}"
 BASE_BRANCH="main"
-CONTEXT_DIRS="src,docs"
+CONTEXT_DIRS=""
+INTERACTIVE_MODE=false
 POLICY_FILE="$SCRIPT_DIR/policies/implementation.policy.md"
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
 	case $1 in
+	-i | --interactive)
+		INTERACTIVE_MODE=true
+		shift
+		;;
 	--workspace-root)
 		WORKSPACE_ROOT="$2"
 		shift 2
@@ -69,40 +80,130 @@ while [[ $# -gt 0 ]]; do
 		;;
 	*)
 		echo "Unknown option: $1"
-		echo "Usage: $0 --workspace-root PATH --jira-ticket-id ID --epic-id ID --existing-app-brd PATH --existing-app-arch PATH --new-brd PATH [--git-repo URL] [--base-branch BRANCH] [--context-dirs DIRS] [--policy-file FILE]"
+		echo "Usage: $0 [-i|--interactive] [--workspace-root PATH] [--jira-ticket-id ID] [--epic-id ID] [--existing-app-brd PATH] [--existing-app-arch PATH] [--new-brd PATH] [--git-repo URL] [--base-branch BRANCH] [--context-dirs DIRS] [--policy-file FILE]"
 		exit 1
 		;;
 	esac
 done
 
+# Interactive mode: prompt for inputs
+if [ "$INTERACTIVE_MODE" = true ]; then
+	echo "=========================================="
+	echo "Interactive Mode: Implementation Generator"
+	echo "=========================================="
+	echo ""
+
+	# Prompt for Git repository
+	if [ -n "$GIT_REPO" ]; then
+		read -p "Enter Git repository URL [default: $GIT_REPO]: " input
+		GIT_REPO="${input:-$GIT_REPO}"
+	else
+		read -p "Enter Git repository URL (optional, press Enter to skip): " GIT_REPO
+	fi
+
+	# Prompt for workspace root
+	if [ -n "$WORKSPACE_ROOT" ]; then
+		read -p "Enter workspace root directory [default: $WORKSPACE_ROOT]: " input
+		WORKSPACE_ROOT="${input:-$WORKSPACE_ROOT}"
+	else
+		read -p "Enter workspace root directory [default: .]: " input
+		WORKSPACE_ROOT="${input:-.}"
+	fi
+
+	# Prompt for JIRA ticket ID
+	if [ -z "$JIRA_TICKET_ID" ]; then
+		read -p "Enter JIRA ticket ID (Story): " JIRA_TICKET_ID
+	fi
+
+	# Prompt for Epic ID
+	if [ -z "$EPIC_ID" ]; then
+		read -p "Enter Epic ID: " EPIC_ID
+	fi
+
+	# Prompt for existing application BRD
+	if [ -n "$EXISTING_APP_BRD" ]; then
+		read -p "Enter existing application BRD document path [default: $EXISTING_APP_BRD]: " input
+		EXISTING_APP_BRD="${input:-$EXISTING_APP_BRD}"
+	else
+		read -p "Enter existing application BRD document path: " EXISTING_APP_BRD
+	fi
+
+	# Prompt for existing application architecture
+	if [ -n "$EXISTING_APP_ARCH" ]; then
+		read -p "Enter existing application architecture documentation path [default: $EXISTING_APP_ARCH]: " input
+		EXISTING_APP_ARCH="${input:-$EXISTING_APP_ARCH}"
+	else
+		read -p "Enter existing application architecture documentation path: " EXISTING_APP_ARCH
+	fi
+
+	# Prompt for new BRD path
+	if [ -z "$NEW_BRD" ]; then
+		read -p "Enter new feature BRD document path: " NEW_BRD
+	fi
+
+	# Prompt for base branch
+	read -p "Enter base branch name [default: main]: " input
+	BASE_BRANCH="${input:-main}"
+
+	# Prompt for context directories
+	read -p "Enter context directories (comma-separated) [default: src,docs]: " input
+	CONTEXT_DIRS="${input:-src,docs}"
+
+	# Prompt for policy file
+	read -p "Enter policy file path [default: $POLICY_FILE]: " input
+	POLICY_FILE="${input:-$POLICY_FILE}"
+
+	echo ""
+fi
+
+# Non-interactive mode: use environment variables if parameters not provided
+if [ "$INTERACTIVE_MODE" = false ]; then
+	WORKSPACE_ROOT="${WORKSPACE_ROOT:-${ENV_WORKSPACE_ROOT:-.}}"
+	JIRA_TICKET_ID="${JIRA_TICKET_ID:-${ENV_JIRA_TICKET_ID}}"
+	EPIC_ID="${EPIC_ID:-${ENV_EPIC_ID}}"
+	EXISTING_APP_BRD="${EXISTING_APP_BRD:-${ENV_EXISTING_APP_BRD}}"
+	EXISTING_APP_ARCH="${EXISTING_APP_ARCH:-${ENV_EXISTING_APP_ARCH}}"
+	NEW_BRD="${NEW_BRD:-${ENV_NEW_BRD}}"
+	GIT_REPO="${GIT_REPO:-${ENV_GIT_REPO}}"
+	BASE_BRANCH="${BASE_BRANCH:-${ENV_BASE_BRANCH:-main}}"
+	CONTEXT_DIRS="${CONTEXT_DIRS:-${ENV_CONTEXT_DIRS:-src,docs}}"
+	POLICY_FILE="${POLICY_FILE:-${ENV_POLICY_FILE:-$SCRIPT_DIR/policies/implementation.policy.md}}"
+fi
+
 # Validate required parameters
 if [ -z "$WORKSPACE_ROOT" ]; then
-	echo "Error: --workspace-root is required"
+	echo "Error: Workspace root is required"
+	echo "Provide via --workspace-root argument, interactive mode (-i), or ENV_WORKSPACE_ROOT environment variable"
 	exit 1
 fi
 
 if [ -z "$JIRA_TICKET_ID" ]; then
-	echo "Error: --jira-ticket-id is required"
+	echo "Error: JIRA ticket ID is required"
+	echo "Provide via --jira-ticket-id argument, interactive mode (-i), or ENV_JIRA_TICKET_ID environment variable"
 	exit 1
 fi
 
 if [ -z "$EPIC_ID" ]; then
-	echo "Error: --epic-id is required"
+	echo "Error: Epic ID is required"
+	echo "Provide via --epic-id argument, interactive mode (-i), or ENV_EPIC_ID environment variable"
 	exit 1
 fi
 
 if [ -z "$EXISTING_APP_BRD" ]; then
-	echo "Error: --existing-app-brd is required"
+	echo "Error: Existing application BRD is required"
+	echo "Provide via --existing-app-brd argument, interactive mode (-i), or ENV_EXISTING_APP_BRD environment variable"
 	exit 1
 fi
 
 if [ -z "$EXISTING_APP_ARCH" ]; then
-	echo "Error: --existing-app-arch is required"
+	echo "Error: Existing application architecture is required"
+	echo "Provide via --existing-app-arch argument, interactive mode (-i), or ENV_EXISTING_APP_ARCH environment variable"
 	exit 1
 fi
 
 if [ -z "$NEW_BRD" ]; then
-	echo "Error: --new-brd is required"
+	echo "Error: New feature BRD is required"
+	echo "Provide via --new-brd argument, interactive mode (-i), or ENV_NEW_BRD environment variable"
 	exit 1
 fi
 
@@ -210,6 +311,7 @@ mkdir -p "$IMPLEMENTATION_DIR"
 echo "=========================================="
 echo "Agent 2: Implementation Generator"
 echo "=========================================="
+echo "Mode: $([ "$INTERACTIVE_MODE" = true ] && echo "Interactive" || echo "Non-Interactive")"
 echo "Git Repository: ${GIT_REPO:-Not provided}"
 echo "Workspace Root: $WORKSPACE_ROOT"
 echo "Base Branch: $BASE_BRANCH"
