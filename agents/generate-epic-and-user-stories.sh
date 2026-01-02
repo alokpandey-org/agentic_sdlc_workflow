@@ -25,7 +25,7 @@ EXISTING_APP_ARCH="${DEMO_EXISTING_APP_ARCH:-}"
 WORKSPACE_ROOT="${DEMO_WORKSPACE_ROOT:-.}"
 GIT_REPO="${DEMO_GIT_REPO:-}"
 CONTEXT_DIRS=""
-OUTPUT_DIR="sdlc-artifacts"
+ARTIFACTS_DIR="sdlc-artifacts"
 INTERACTIVE_MODE=false
 POLICY_FILE="$SCRIPT_DIR/policies/epic-stories-generation.policy.md"
 
@@ -135,8 +135,8 @@ if [ "$INTERACTIVE_MODE" = false ]; then
 fi
 
 # Always store SDLC artifacts under the workspace root
-OUTPUT_DIR="$WORKSPACE_ROOT/sdlc-artifacts"
-EPIC_STORIES_DIR="$OUTPUT_DIR/epic-stories"
+ARTIFACTS_DIR="$WORKSPACE_ROOT/sdlc-artifacts"
+EPIC_STORIES_DIR="$ARTIFACTS_DIR/epic-stories"
 
 # Validate required parameters
 if [ -z "$BRD_PATH" ]; then
@@ -198,7 +198,7 @@ echo "Existing App BRD Path: ${EXISTING_APP_BRD:-Not provided}"
 echo "Existing App Architecture Path: ${EXISTING_APP_ARCH:-Not provided}"
 echo "Workspace Root: $WORKSPACE_ROOT"
 echo "Context Directories: $CONTEXT_DIRS"
-echo "Output Directory: $OUTPUT_DIR"
+echo "Artifacts Directory: $ARTIFACTS_DIR"
 echo "Policy File: $POLICY_FILE"
 echo ""
 
@@ -231,7 +231,7 @@ fi
 CONTEXT_INSTRUCTION="$CONTEXT_INSTRUCTION
 - Workspace Root: $WORKSPACE_ROOT
 - Context Directories: $CONTEXT_DIRS
-- Output Directory: $EPIC_STORIES_DIR/
+- Artifacts Directory: $EPIC_STORIES_DIR/
 
 IMPORTANT: Create the following files in JSON format:
 1. epic.json - Epic with title and description (ADF JSON object) fields

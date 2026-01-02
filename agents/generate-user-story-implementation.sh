@@ -229,6 +229,9 @@ if [ ! -f "$NEW_BRD" ]; then
 	exit 1
 fi
 
+# Save original workspace root for SDLC artifacts
+ORIGINAL_WORKSPACE_ROOT="$WORKSPACE_ROOT"
+
 # Clone Git repository if provided (always delete and re-clone for clean state)
 if [ -n "$GIT_REPO" ]; then
 	# Extract repo name from URL (last part without .git)
@@ -247,7 +250,7 @@ if [ -n "$GIT_REPO" ]; then
 	echo "Repository cloned successfully."
 	echo ""
 
-	# Update workspace root to the cloned repository
+	# Update workspace root to the cloned repository for git operations
 	WORKSPACE_ROOT="$REPO_DIR"
 fi
 
@@ -295,18 +298,18 @@ fi
 echo "Current branch: $(git rev-parse --abbrev-ref HEAD)"
 echo ""
 
-# Always store SDLC artifacts under the workspace root
-OUTPUT_DIR="$WORKSPACE_ROOT/sdlc-artifacts"
-IMPLEMENTATION_DIR="$OUTPUT_DIR/implementation"
+# Always store SDLC artifacts under the original workspace root (not inside cloned repo)
+ARTIFACTS_DIR="$ORIGINAL_WORKSPACE_ROOT/sdlc-artifacts"
+IMPLEMENTATION_ARTIFACTS_DIR="$ARTIFACTS_DIR/implementation"
 
 # Pre-check: Clean output directory if it exists
-if [ -d "$IMPLEMENTATION_DIR" ]; then
-	echo "Cleaning existing implementation directory: $IMPLEMENTATION_DIR"
-	rm -rf "$IMPLEMENTATION_DIR"
+if [ -d "$IMPLEMENTATION_ARTIFACTS_DIR" ]; then
+	echo "Cleaning existing implementation directory: $IMPLEMENTATION_ARTIFACTS_DIR"
+	rm -rf "$IMPLEMENTATION_ARTIFACTS_DIR"
 fi
 
 # Create output directory
-mkdir -p "$IMPLEMENTATION_DIR"
+mkdir -p "$IMPLEMENTATION_ARTIFACTS_DIR"
 
 echo "=========================================="
 echo "Agent 2: Implementation Generator"
@@ -322,7 +325,7 @@ echo "Existing App BRD Path: $EXISTING_APP_BRD"
 echo "Existing App Architecture Path: $EXISTING_APP_ARCH"
 echo "New BRD Path: $NEW_BRD"
 echo "Context Directories: $CONTEXT_DIRS"
-echo "Output Directory: $OUTPUT_DIR"
+echo "Artifacts Directory: $ARTIFACTS_DIR"
 echo "Policy File: $POLICY_FILE"
 echo ""
 
@@ -428,7 +431,7 @@ DOCUMENTS:
 WORKSPACE:
 - Workspace Root: $WORKSPACE_ROOT
 - Context Directories: $CONTEXT_DIRS
-- Output Directory: $IMPLEMENTATION_DIR/
+- Artifacts Directory: $IMPLEMENTATION_ARTIFACTS_DIR/
 - Base Branch: $BASE_BRANCH (branch to merge into)
 - Story Branch: $BRANCH_NAME (current working branch)
 
@@ -450,9 +453,9 @@ auggie -p \
 	"$IMPLEMENTATION_INSTRUCTION"
 
 # Check if required files were generated
-if [ ! -f "$IMPLEMENTATION_DIR/changes-summary.md" ] || [ ! -f "$IMPLEMENTATION_DIR/pr.json" ]; then
+if [ ! -f "$IMPLEMENTATION_ARTIFACTS_DIR/changes-summary.md" ] || [ ! -f "$IMPLEMENTATION_ARTIFACTS_DIR/pr.json" ]; then
 	echo "Error: Expected output files not found."
-	echo "Please ensure changes-summary.md and pr.json are created in $IMPLEMENTATION_DIR/"
+	echo "Please ensure changes-summary.md and pr.json are created in $IMPLEMENTATION_ARTIFACTS_DIR/"
 	exit 1
 fi
 
@@ -460,13 +463,13 @@ echo ""
 echo "=========================================="
 echo "Implementation Generated"
 echo "=========================================="
-echo "Output location: $IMPLEMENTATION_DIR/"
+echo "Output location: $IMPLEMENTATION_ARTIFACTS_DIR/"
 echo ""
 echo "Generated files:"
 echo "- changes-summary.md"
 echo "- pr.json"
 echo ""
-echo "Please review the generated implementation at: $IMPLEMENTATION_DIR/"
+echo "Please review the generated implementation at: $IMPLEMENTATION_ARTIFACTS_DIR/"
 echo ""
 
 # Approval workflow
@@ -495,10 +498,10 @@ echo "=========================================="
 
 # We're already in the workspace and on the correct branch
 # Extract PR details from pr.json
-PR_TITLE=$(jq -r '.title' "$IMPLEMENTATION_DIR/pr.json")
-PR_BODY=$(jq -r '.body' "$IMPLEMENTATION_DIR/pr.json")
-PR_BASE=$(jq -r '.base' "$IMPLEMENTATION_DIR/pr.json")
-PR_HEAD=$(jq -r '.head' "$IMPLEMENTATION_DIR/pr.json")
+PR_TITLE=$(jq -r '.title' "$IMPLEMENTATION_ARTIFACTS_DIR/pr.json")
+PR_BODY=$(jq -r '.body' "$IMPLEMENTATION_ARTIFACTS_DIR/pr.json")
+PR_BASE=$(jq -r '.base' "$IMPLEMENTATION_ARTIFACTS_DIR/pr.json")
+PR_HEAD=$(jq -r '.head' "$IMPLEMENTATION_ARTIFACTS_DIR/pr.json")
 
 # Verify we're on the correct branch
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
@@ -551,8 +554,8 @@ if command -v gh &>/dev/null; then
 		echo "=========================================="
 
 		# Save PR number and URL for next agents
-		echo "$PR_NUMBER" >"$IMPLEMENTATION_DIR/pr-number.txt"
-		echo "$PR_URL" >"$IMPLEMENTATION_DIR/pr-url.txt"
+		echo "$PR_NUMBER" >"$IMPLEMENTATION_ARTIFACTS_DIR/pr-number.txt"
+		echo "$PR_URL" >"$IMPLEMENTATION_ARTIFACTS_DIR/pr-url.txt"
 
 		echo ""
 		echo "View Pull Request: $PR_URL"

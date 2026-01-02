@@ -289,62 +289,11 @@ Before finalizing implementation:
 
 ## Output File Requirements
 
-Generate the following files in the output directory:
+Generate exactly these 2 files in the output directory:
 
-### 1. changes-summary.md
+### 1. summary.md
 
-```markdown
-# Implementation Summary
-
-## Story
-
-STORY-XXX: Story Title
-
-## Files Created
-
-- path/to/new/file.py - Description
-
-## Files Modified
-
-- path/to/existing/file.py - Description of changes
-
-## Database Changes
-
-- Migration: XXXX_migration_name.py
-- Tables: table_name (created/modified)
-- Columns: column_name (added/modified)
-
-## API Changes
-
-- New endpoints: POST /api/endpoint
-- Modified endpoints: GET /api/endpoint (added parameter)
-- Breaking changes: None / List of breaking changes
-
-## Configuration Changes
-
-- Environment variables: NEW_VAR (default: value)
-- Settings: setting_name (updated)
-
-## Migration Steps
-
-1. Run database migrations
-2. Update environment variables
-3. Restart services
-
-## Rollback Procedure
-
-1. Revert database migrations
-2. Restore previous configuration
-3. Redeploy previous version
-
-## Breaking Changes
-
-None / List of breaking changes with migration guide
-
-## Notes
-
-Additional implementation notes
-```
+Summary of the changes in markdown format
 
 ### 2. pr.json
 
