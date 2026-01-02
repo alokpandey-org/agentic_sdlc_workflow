@@ -40,9 +40,41 @@ if ! command -v adf2md &>/dev/null; then
 	echo "❌ ERROR: 'adf2md' is not installed"
 	echo "   adf2md is required for converting ADF to markdown"
 	echo "   Install it from: https://github.com/carylee/adf2md"
+	echo "   Quick install: npm install -g @carylee/adf2md"
 	MISSING_TOOLS=1
 else
 	echo "✓ adf2md found: $(command -v adf2md)"
+fi
+
+# Check for curl
+if ! command -v curl &>/dev/null; then
+	echo "❌ ERROR: 'curl' is not installed"
+	echo "   curl is required for API calls"
+	echo "   Install it with: brew install curl (macOS) or apt-get install curl (Linux)"
+	MISSING_TOOLS=1
+else
+	echo "✓ curl found: $(command -v curl)"
+fi
+
+# Check for auggie
+if ! command -v auggie &>/dev/null; then
+	echo "❌ ERROR: 'auggie' is not installed"
+	echo "   auggie is required for AI agent execution"
+	echo "   Please install auggie CLI"
+	MISSING_TOOLS=1
+else
+	echo "✓ auggie found: $(command -v auggie)"
+fi
+
+# Check for gh (GitHub CLI)
+if ! command -v gh &>/dev/null; then
+	echo "❌ WARNING: 'gh' (GitHub CLI) is not installed"
+	echo "   gh is required for creating pull requests automatically"
+	echo "   Install it from: https://cli.github.com/"
+	echo "   Quick install: brew install gh (macOS)"
+	echo "   Note: You can still use the agents, but PR creation will be manual"
+else
+	echo "✓ gh found: $(command -v gh)"
 fi
 
 echo ""
@@ -148,6 +180,44 @@ else
 	echo "ERROR: GitHub connection failed"
 	echo "   Please verify your GITHUB_TOKEN"
 	exit 1
+fi
+
+echo ""
+
+# Configure GitHub CLI (gh) if available
+if command -v gh &>/dev/null; then
+	echo "=========================================="
+	echo "Configuring GitHub CLI (gh)"
+	echo "=========================================="
+	echo ""
+
+	# Check if gh is already authenticated
+	if gh auth status &>/dev/null; then
+		echo "GitHub CLI is already authenticated"
+		GH_USER=$(gh api user -q .login 2>/dev/null || echo "")
+		if [ -n "$GH_USER" ]; then
+			echo "   Authenticated as: $GH_USER"
+		fi
+	else
+		echo "GitHub CLI is not authenticated. Configuring with GITHUB_TOKEN..."
+
+		# Authenticate gh using the token
+		echo "$GITHUB_TOKEN" | gh auth login --with-token 2>/dev/null
+
+		if gh auth status &>/dev/null; then
+			echo "✓ GitHub CLI authenticated successfully"
+			GH_USER=$(gh api user -q .login 2>/dev/null || echo "")
+			if [ -n "$GH_USER" ]; then
+				echo "   Authenticated as: $GH_USER"
+			fi
+		else
+			echo "WARNING: Failed to authenticate GitHub CLI"
+			echo "   You can manually authenticate with: gh auth login"
+			echo "   Or the agents will use GITHUB_TOKEN environment variable"
+		fi
+	fi
+
+	echo ""
 fi
 
 echo ""

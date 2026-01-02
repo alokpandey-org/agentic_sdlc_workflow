@@ -177,3 +177,59 @@ get_jira_project() {
 	echo "Project found: $project_name"
 	return 0
 }
+
+# Function to get issue details from JIRA
+get_jira_issue() {
+	local issue_key="$1"
+
+	if [ -z "$issue_key" ]; then
+		echo "Error: Issue key is required" >&2
+		return 1
+	fi
+
+	echo "Fetching JIRA issue: $issue_key" >&2
+
+	local response=$(curl -s -X GET "$JIRA_API_URL/issue/$issue_key" \
+		-u "$JIRA_EMAIL:$JIRA_TOKEN")
+
+	local error_messages=$(echo "$response" | jq -r '.errorMessages[]? // empty')
+
+	if [ -n "$error_messages" ]; then
+		echo "Error fetching issue '$issue_key': $error_messages" >&2
+		return 1
+	fi
+
+	# Return the full JSON response
+	echo "$response"
+}
+
+# Function to verify if an issue is of a specific type
+verify_issue_type() {
+	local issue_key="$1"
+	local expected_type="$2" # "Epic" or "Story"
+
+	if [ -z "$issue_key" ] || [ -z "$expected_type" ]; then
+		echo "Error: Issue key and expected type are required" >&2
+		return 1
+	fi
+
+	local issue_json=$(get_jira_issue "$issue_key")
+	if [ $? -ne 0 ]; then
+		return 1
+	fi
+
+	local actual_type=$(echo "$issue_json" | jq -r '.fields.issuetype.name // empty')
+
+	if [ -z "$actual_type" ]; then
+		echo "Error: Could not determine issue type for '$issue_key'" >&2
+		return 1
+	fi
+
+	if [ "$actual_type" != "$expected_type" ]; then
+		echo "Error: Issue '$issue_key' is of type '$actual_type', expected '$expected_type'" >&2
+		return 1
+	fi
+
+	echo "Verified: $issue_key is a $expected_type" >&2
+	return 0
+}

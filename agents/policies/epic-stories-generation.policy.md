@@ -1,10 +1,10 @@
-Epic & User Stories Generation Policy
+# Epic & User Stories Generation Policy
 
-Agent Role
+## Agent Role
 
 You are analyzing a codebase to generate an Epic and User Stories from a BRD document.
 
-Context Discovery Instructions
+## Context Discovery Instructions
 
 1. Analyze the new feature BRD document at the specified path
 2. Review the existing application BRD to understand current system capabilities
@@ -17,7 +17,7 @@ Context Discovery Instructions
 9. Identify technical constraints and dependencies
 10. Map how the new feature integrates with existing architecture
 
-Working Methodology
+## Working Methodology
 
 After gathering all required context:
 
@@ -25,63 +25,66 @@ After gathering all required context:
 2. Create tasks to track the creation of each epic and story
 3. Execute tasks one by one to maintain focus and avoid being overwhelmed
 
-Epic Format Requirements
+## Epic Format Requirements
 
 Generate ONE Epic as a JSON object with the following structure:
 
-- title: Clear, business-focused title (max 100 characters)
-- description: Comprehensive description in Atlassian Document Format (ADF) including:
+- **title**: Clear, business-focused title (max 100 characters)
+- **description**: Comprehensive description in Atlassian Document Format (ADF) including:
   - Summary section (as heading level 2)
   - Business Value section (as heading level 2, why this matters, quantifiable if possible)
   - Acceptance Criteria section (as heading level 2, with 3-5 high-level success criteria as bullet list)
 
-User Story Format Requirements
+## User Story Format Requirements
 
 Generate User Stories as a JSON array, with each story having:
 
-- title: User-focused title (max 80 characters)
-- description: Comprehensive description in Atlassian Document Format (ADF) including:
+- **title**: User-focused title (max 80 characters)
+- **description**: Comprehensive description in Atlassian Document Format (ADF) including:
   - User Story section (as heading level 2, with "As a [role], I want [goal], so that [benefit]" as paragraph)
   - Acceptance Criteria section (as heading level 2, with 3-7 specific, testable criteria as bullet list)
   - Technical Notes section (as heading level 2, implementation guidance, specific files/classes/APIs to modify as bullet list)
   - Test Strategy section (as heading level 2, how to test: unit, integration, e2e as bullet list)
   - Definition of Done section (as heading level 2, clear completion criteria as bullet list)
-- priority: JIRA priority value (see Priority Values section below)
+- **priority**: JIRA priority value (see Priority Values section below)
 
-Story Ordering Requirements
+## Story Ordering Requirements
 
 Stories MUST be ordered in the JSON array from 1 to N such that:
+
 1. Dependencies are satisfied when stories are executed sequentially
 2. Foundational stories (database schema, core APIs) come first
 3. Dependent stories (UI, integrations) come later
 
-Priority Values
+## Priority Values
 
 The priority field MUST use one of these exact JIRA priority values:
 
-- "Highest" - Critical/Blocker issues, foundational changes required for feature to work
-- "High" - Important features, must-have for release, core functionality
-- "Medium" - Standard features, should-have, enhancements
-- "Low" - Nice-to-have features, UI polish, optional improvements
-- "Lowest" - Future enhancements, technical debt, optional optimizations
+- **"Highest"** - Critical/Blocker issues, foundational changes required for feature to work
+- **"High"** - Important features, must-have for release, core functionality
+- **"Medium"** - Standard features, should-have, enhancements
+- **"Low"** - Nice-to-have features, UI polish, optional improvements
+- **"Lowest"** - Future enhancements, technical debt, optional optimizations
 
-Priority Assignment Guidelines:
+### Priority Assignment Guidelines
 
 - Use "Highest" or "High" for: Database schema changes, core API endpoints, breaking changes, security-critical changes
 - Use "Medium" for: Standard business logic, UI components, integrations, documentation
 - Use "Low" or "Lowest" for: UI polish, performance optimizations, nice-to-have features
 
-Story Coverage Requirements
+## Story Coverage Requirements
 
 Create stories that cover ALL aspects mentioned in the BRD, including:
 
-1. Database & Data Model Stories
+### 1. Database & Data Model Stories
+
 - Schema changes and migrations
 - New tables, columns, indexes
 - Data migration scripts
 - Backward compatibility considerations
 
-2. API & Integration Stories
+### 2. API & Integration Stories
+
 - New API endpoints
 - API versioning (if breaking changes)
 - Request/response schema changes
@@ -89,21 +92,24 @@ Create stories that cover ALL aspects mentioned in the BRD, including:
 - Rate limiting and throttling
 - API documentation updates
 
-3. Business Logic Stories
+### 3. Business Logic Stories
+
 - Core feature implementation
 - Business rules and validations
 - Calculation logic
 - State management
 - Error handling
 
-4. User Interface Stories
+### 4. User Interface Stories
+
 - New UI components
 - UI/UX changes
 - Responsive design
 - Accessibility requirements
 - Internationalization
 
-5. Testing Stories
+### 5. Testing Stories
+
 - Unit test requirements
 - Integration test scenarios
 - End-to-end test cases
@@ -111,39 +117,44 @@ Create stories that cover ALL aspects mentioned in the BRD, including:
 - Security testing
 - Regression testing for impacted existing features
 
-6. Infrastructure & DevOps Stories
+### 6. Infrastructure & DevOps Stories
+
 - Configuration changes
 - Environment variables
 - Deployment scripts
 - Monitoring and alerting
 - Logging enhancements
 
-7. Documentation Stories
+### 7. Documentation Stories
+
 - API documentation
 - User documentation
 - Developer guides
 - Architecture decision records
 - Runbooks
 
-8. Migration & Rollback Stories
+### 8. Migration & Rollback Stories
+
 - Data migration procedures
 - Rollback strategies
 - Feature flags
 - Gradual rollout plan
 
-9. Technical Debt Stories
+### 9. Technical Debt Stories
+
 - Code refactoring needs
 - Performance optimizations
 - Security improvements
 - Dependency updates
 
-10. Compliance & Security Stories
+### 10. Compliance & Security Stories
+
 - Security requirements
 - Compliance checks
 - Audit logging
 - Data privacy considerations
 
-Story Independence & Breakdown Guidelines
+## Story Independence & Breakdown Guidelines
 
 Follow industry standards when breaking down epics into user stories:
 
@@ -156,248 +167,192 @@ Follow industry standards when breaking down epics into user stories:
 7. Context-dependent separation: Integration tests, documentation, refactoring, migrations, infrastructure - decide based on feature complexity and effort whether to create separate stories or include in Definition of Done
 8. Avoid anti-patterns: Don't separate by file/class (too granular), don't create artificial dependencies that force sequential work
 
-Impact Analysis Requirements
+## Impact Analysis Requirements
 
-CRITICAL: Before generating stories, perform a comprehensive impact analysis of the new feature on the existing system.
+**CRITICAL**: Before generating stories, perform a comprehensive impact analysis of the new feature on the existing system.
 
-1. Breaking Changes Analysis
+### 1. Breaking Changes Analysis
 
 Identify and document:
-- API Breaking Changes: Any changes to existing API endpoints, request/response schemas, or behavior
-- Database Schema Changes: Modifications to existing tables, columns, or constraints
-- Data Model Changes: Changes to existing models, fields, or relationships
-- Interface Changes: Modifications to existing interfaces, contracts, or protocols
-- Behavior Changes: Alterations to existing functionality or business logic
 
-2. API Versioning Strategy
+- **API Breaking Changes**: Any changes to existing API endpoints, request/response schemas, or behavior
+- **Database Schema Changes**: Modifications to existing tables, columns, or constraints
+- **Data Model Changes**: Changes to existing models, fields, or relationships
+- **Interface Changes**: Modifications to existing interfaces, contracts, or protocols
+- **Behavior Changes**: Alterations to existing functionality or business logic
+
+### 2. API Versioning Strategy
 
 When breaking changes are identified:
-- Create API Versioning Stories: Generate dedicated stories for API versioning (e.g., /v1/ to /v2/)
-- Deprecation Plan: Include stories for deprecating old API versions with timeline
-- Migration Path: Document how clients will migrate from old to new API
-- Backward Compatibility: Create stories to maintain backward compatibility where possible
-- Version Documentation: Include stories for documenting version differences
 
-3. Existing Functionality Impact
+- **Create API Versioning Stories**: Generate dedicated stories for API versioning (e.g., /v1/ to /v2/)
+- **Deprecation Plan**: Include stories for deprecating old API versions with timeline
+- **Migration Path**: Document how clients will migrate from old to new API
+- **Backward Compatibility**: Create stories to maintain backward compatibility where possible
+- **Version Documentation**: Include stories for documenting version differences
+
+### 3. Existing Functionality Impact
 
 For each affected existing feature:
-- Identify Affected Components: List all modules, classes, functions, and files impacted
-- Create Update Stories: Generate stories to update existing functionality
-- Regression Testing Stories: Add stories for testing existing features still work
-- Integration Point Updates: Create stories for updating integration points
-- Configuration Changes: Include stories for updating configurations
 
-4. Data Migration Impact
+- **Identify Affected Components**: List all modules, classes, functions, and files impacted
+- **Create Update Stories**: Generate stories to update existing functionality
+- **Regression Testing Stories**: Add stories for testing existing features still work
+- **Integration Point Updates**: Create stories for updating integration points
+- **Configuration Changes**: Include stories for updating configurations
+
+### 4. Data Migration Impact
 
 When data changes are required:
-- Migration Stories: Create dedicated stories for data migration scripts
-- Rollback Stories: Include stories for rollback procedures
-- Data Validation Stories: Add stories to validate migrated data
-- Performance Testing: Include stories for testing migration performance
-- Zero-Downtime Migration: If required, create stories for online migration
 
-5. Dependency Impact Analysis
+- **Migration Stories**: Create dedicated stories for data migration scripts
+- **Rollback Stories**: Include stories for rollback procedures
+- **Data Validation Stories**: Add stories to validate migrated data
+- **Performance Testing**: Include stories for testing migration performance
+- **Zero-Downtime Migration**: If required, create stories for online migration
+
+### 5. Dependency Impact Analysis
 
 Analyze and document:
-- Upstream Dependencies: Systems/services that depend on the changed components
-- Downstream Dependencies: Systems/services that the new feature depends on
-- Third-party Integrations: External systems that may be affected
-- Client Applications: Frontend/mobile apps that need updates
-- Partner APIs: External partners using your APIs
 
-6. Story Generation Based on Impact
+- **Upstream Dependencies**: Systems/services that depend on the changed components
+- **Downstream Dependencies**: Systems/services that the new feature depends on
+- **Third-party Integrations**: External systems that may be affected
+- **Client Applications**: Frontend/mobile apps that need updates
+- **Partner APIs**: External partners using your APIs
+
+### 6. Story Generation Based on Impact
 
 Generate stories in this order based on impact:
 
-Phase 1: Foundation & Breaking Changes
+**Phase 1: Foundation & Breaking Changes**
+
 - API versioning stories (if needed)
 - Database schema migration stories
 - Data model update stories
 - Breaking change mitigation stories
 
-Phase 2: Existing Functionality Updates
+**Phase 2: Existing Functionality Updates**
+
 - Stories to update affected existing features
 - Integration point update stories
 - Configuration update stories
 - Backward compatibility stories
 
-Phase 3: New Feature Implementation
+**Phase 3: New Feature Implementation**
+
 - Core new feature stories
 - New API endpoint stories
 - New UI component stories
 - New business logic stories
 
-Phase 4: Testing & Validation
+**Phase 4: Testing & Validation**
+
 - Regression testing stories for existing features
 - New feature testing stories
 - Integration testing stories
 - Performance testing stories
 
-Phase 5: Documentation & Migration
+**Phase 5: Documentation & Migration**
+
 - API documentation update stories
 - Migration guide stories
 - Deprecation notice stories
 - User communication stories
 
-7. Impact Severity Classification
+### 7. Impact Severity Classification
 
 Classify each impact as:
-- CRITICAL: Breaks existing functionality, requires immediate attention
-- HIGH: Significant changes to existing features, needs careful planning
-- MEDIUM: Minor changes to existing features, manageable impact
-- LOW: Minimal or no impact on existing features
 
-8. Mandatory Impact Analysis Stories
+- **CRITICAL**: Breaks existing functionality, requires immediate attention
+- **HIGH**: Significant changes to existing features, needs careful planning
+- **MEDIUM**: Minor changes to existing features, manageable impact
+- **LOW**: Minimal or no impact on existing features
+
+### 8. Mandatory Impact Analysis Stories
 
 Always include these stories when impact is detected:
 
-1. Impact Assessment Story (P0)
-   - Comprehensive analysis of all affected components
-   - List of breaking changes
-   - Migration strategy
-   - Risk assessment
+#### Impact Assessment Story (P0)
 
-2. API Versioning Story (P0 if breaking changes exist)
-   - Implement new API version
-   - Maintain old version during deprecation period
-   - Version routing logic
+- Comprehensive analysis of all affected components
+- List of breaking changes
+- Migration strategy
+- Risk assessment
 
-3. Existing Feature Update Stories (P0-P1)
-   - One story per significantly affected feature
-   - Update logic to work with new changes
-   - Maintain backward compatibility where possible
+#### API Versioning Story (P0 if breaking changes exist)
 
-4. Regression Testing Story (P0)
-   - Test all affected existing features
-   - Automated regression test suite
-   - Manual testing checklist
+- Implement new API version
+- Maintain old version during deprecation period
+- Version routing logic
 
-5. Data Migration Story (P0 if schema changes)
-   - Migration scripts
-   - Rollback procedures
-   - Data validation
+#### Existing Feature Update Stories (P0-P1)
 
-6. Documentation Update Story (P1)
-   - Update API documentation
-   - Update architecture diagrams
-   - Create migration guides
+- One story per significantly affected feature
+- Update logic to work with new changes
+- Maintain backward compatibility where possible
 
-Technical Considerations
+#### Regression Testing Story (P0)
 
-1. Use Actual Codebase Patterns: Follow existing conventions and patterns
-2. Reference Existing Code: Mention specific files, classes, and APIs
-3. Backward Compatibility: Ensure changes don't break existing functionality
-4. Rollback Strategy: Include rollback procedures for risky changes
-5. Performance Impact: Consider performance implications
-6. Scalability: Ensure solution scales with growth
-7. Security: Include security considerations
-8. Testability: Ensure stories are testable
-9. Impact Analysis: ALWAYS perform and document impact analysis
-10. Breaking Changes: Create dedicated stories for all breaking changes
+- Test all affected existing features
+- Automated regression test suite
+- Manual testing checklist
 
-Output File Requirements
+#### Data Migration Story (P0 if schema changes)
+
+- Migration scripts
+- Rollback procedures
+- Data validation
+
+#### Documentation Update Story (P1)
+
+- Update API documentation
+- Update architecture diagrams
+- Create migration guides
+
+## Technical Considerations
+
+1. **Use Actual Codebase Patterns**: Follow existing conventions and patterns
+2. **Reference Existing Code**: Mention specific files, classes, and APIs
+3. **Backward Compatibility**: Ensure changes don't break existing functionality
+4. **Rollback Strategy**: Include rollback procedures for risky changes
+5. **Performance Impact**: Consider performance implications
+6. **Scalability**: Ensure solution scales with growth
+7. **Security**: Include security considerations
+8. **Testability**: Ensure stories are testable
+9. **Impact Analysis**: ALWAYS perform and document impact analysis
+10. **Breaking Changes**: Create dedicated stories for all breaking changes
+
+## Output File Requirements
 
 Generate EXACTLY these 3 files in the output directory:
 
-1. epic.json
+### 1. epic.json
 
 A single JSON object with title and description in Atlassian Document Format (ADF):
 
 ```json
-{
-  "title": "Multi-Warehouse Inventory Management System",
-  "description": {
-    "type": "doc",
-    "version": 1,
-    "content": [
-      {
-        "type": "heading",
-        "attrs": {"level": 2},
-        "content": [{"type": "text", "text": "Summary"}]
-      },
-      {
-        "type": "paragraph",
-        "content": [{"type": "text", "text": "Implement comprehensive multi-warehouse inventory tracking system that allows tracking inventory across multiple warehouse locations with real-time synchronization."}]
-      },
-      {
-        "type": "heading",
-        "attrs": {"level": 2},
-        "content": [{"type": "text", "text": "Business Value"}]
-      },
-      {
-        "type": "paragraph",
-        "content": [{"type": "text", "text": "Enables business expansion to multiple locations while maintaining centralized inventory visibility. Estimated to reduce inventory discrepancies by 40% and improve order fulfillment accuracy."}]
-      },
-      {
-        "type": "heading",
-        "attrs": {"level": 2},
-        "content": [{"type": "text", "text": "Acceptance Criteria"}]
-      },
-      {
-        "type": "bulletList",
-        "content": [
-          {"type": "listItem", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Support minimum 10 warehouse locations"}]}]},
-          {"type": "listItem", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Real-time inventory synchronization across warehouses"}]}]},
-          {"type": "listItem", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Transfer inventory between warehouses"}]}]},
-          {"type": "listItem", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Generate warehouse-specific inventory reports"}]}]},
-          {"type": "listItem", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Maintain audit trail of all inventory movements"}]}]}
-        ]
-      }
-    ]
-  }
-}
+{"title":"Multi-Warehouse Inventory Management System","description":{"type":"doc","version":1,"content":[{"type":"heading","attrs":{"level":2},"content":[{"type":"text","text":"Summary"}]},{"type":"paragraph","content":[{"type":"text","text":"Implement comprehensive multi-warehouse inventory tracking system that allows tracking inventory across multiple warehouse locations with real-time synchronization."}]},{"type":"heading","attrs":{"level":2},"content":[{"type":"text","text":"Business Value"}]},{"type":"paragraph","content":[{"type":"text","text":"Enables business expansion to multiple locations while maintaining centralized inventory visibility. Estimated to reduce inventory discrepancies by 40% and improve order fulfillment accuracy."}]},{"type":"heading","attrs":{"level":2},"content":[{"type":"text","text":"Acceptance Criteria"}]},{"type":"bulletList","content":[{"type":"listItem","content":[{"type":"paragraph","content":[{"type":"text","text":"Support minimum 10 warehouse locations"}]}]},{"type":"listItem","content":[{"type":"paragraph","content":[{"type":"text","text":"Real-time inventory synchronization across warehouses"}]}]},{"type":"listItem","content":[{"type":"paragraph","content":[{"type":"text","text":"Transfer inventory between warehouses"}]}]},{"type":"listItem","content":[{"type":"paragraph","content":[{"type":"text","text":"Generate warehouse-specific inventory reports"}]}]},{"type":"listItem","content":[{"type":"paragraph","content":[{"type":"text","text":"Maintain audit trail of all inventory movements"}]}]}]}]}}
 ```
 
-Key requirements for epic.json:
-- title: String, max 100 characters
-- description: ADF JSON object (NOT a string)
+**Key requirements for epic.json:**
+
+- **title**: String, max 100 characters
+- **description**: ADF JSON object (NOT a string)
 - Description must be valid ADF with type="doc", version=1, and content array
 - Description must include: Summary (heading + paragraph), Business Value (heading + paragraph), and Acceptance Criteria (heading + bulletList) sections
 - Use proper ADF node types: heading, paragraph, bulletList, listItem, text
 
-2. stories.json
+### 2. stories.json
 
 A JSON array of story objects, ordered by dependency (foundational stories first). Each story description MUST be in Atlassian Document Format (ADF):
 
 ```json
-[
-  {
-    "title": "Create Warehouse Database Schema",
-    "description": {
-      "type": "doc",
-      "version": 1,
-      "content": [
-        {"type": "heading", "attrs": {"level": 2}, "content": [{"type": "text", "text": "User Story"}]},
-        {"type": "paragraph", "content": [{"type": "text", "text": "As a system administrator, I want to define multiple warehouse locations in the system, so that inventory can be tracked separately for each location."}]},
-        {"type": "heading", "attrs": {"level": 2}, "content": [{"type": "text", "text": "Acceptance Criteria"}]},
-        {"type": "bulletList", "content": [
-          {"type": "listItem", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Create Warehouse model with fields: name, code, address, contact info, status"}]}]},
-          {"type": "listItem", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Add warehouse_id foreign key to inventory tables"}]}]},
-          {"type": "listItem", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Create database migration scripts with rollback support"}]}]}
-        ]},
-        {"type": "heading", "attrs": {"level": 2}, "content": [{"type": "text", "text": "Technical Notes"}]},
-        {"type": "bulletList", "content": [
-          {"type": "listItem", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Add warehouses table with required columns"}]}]},
-          {"type": "listItem", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Modify inventory table to add warehouse_id column"}]}]}
-        ]},
-        {"type": "heading", "attrs": {"level": 2}, "content": [{"type": "text", "text": "Test Strategy"}]},
-        {"type": "bulletList", "content": [
-          {"type": "listItem", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Unit tests for model validation"}]}]},
-          {"type": "listItem", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Integration tests for database constraints"}]}]}
-        ]},
-        {"type": "heading", "attrs": {"level": 2}, "content": [{"type": "text", "text": "Definition of Done"}]},
-        {"type": "bulletList", "content": [
-          {"type": "listItem", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Database schema created and migrated"}]}]},
-          {"type": "listItem", "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Model tests passing with >90% coverage"}]}]}
-        ]}
-      ]
-    },
-    "priority": "High"
-  }
-]
+[{"title":"Create Warehouse Database Schema","description":{"type":"doc","version":1,"content":[{"type":"heading","attrs":{"level":2},"content":[{"type":"text","text":"User Story"}]},{"type":"paragraph","content":[{"type":"text","text":"As a system administrator, I want to define multiple warehouse locations in the system, so that inventory can be tracked separately for each location."}]},{"type":"heading","attrs":{"level":2},"content":[{"type":"text","text":"Acceptance Criteria"}]},{"type":"bulletList","content":[{"type":"listItem","content":[{"type":"paragraph","content":[{"type":"text","text":"Create Warehouse model with fields: name, code, address, contact info, status"}]}]},{"type":"listItem","content":[{"type":"paragraph","content":[{"type":"text","text":"Add warehouse_id foreign key to inventory tables"}]}]},{"type":"listItem","content":[{"type":"paragraph","content":[{"type":"text","text":"Create database migration scripts with rollback support"}]}]}]},{"type":"heading","attrs":{"level":2},"content":[{"type":"text","text":"Technical Notes"}]},{"type":"bulletList","content":[{"type":"listItem","content":[{"type":"paragraph","content":[{"type":"text","text":"Add warehouses table with required columns"}]}]},{"type":"listItem","content":[{"type":"paragraph","content":[{"type":"text","text":"Modify inventory table to add warehouse_id column"}]}]}]},{"type":"heading","attrs":{"level":2},"content":[{"type":"text","text":"Test Strategy"}]},{"type":"bulletList","content":[{"type":"listItem","content":[{"type":"paragraph","content":[{"type":"text","text":"Unit tests for model validation"}]}]},{"type":"listItem","content":[{"type":"paragraph","content":[{"type":"text","text":"Integration tests for database constraints"}]}]}]},{"type":"heading","attrs":{"level":2},"content":[{"type":"text","text":"Definition of Done"}]},{"type":"bulletList","content":[{"type":"listItem","content":[{"type":"paragraph","content":[{"type":"text","text":"Database schema created and migrated"}]}]},{"type":"listItem","content":[{"type":"paragraph","content":[{"type":"text","text":"Model tests passing with >90% coverage"}]}]}]}]},"priority":"High"}]
 ```
 
-Key requirements for stories.json:
+**Key requirements for stories.json:**
+
 - Array of story objects, ordered by dependency (1 to N)
 - Each story has: title (string, max 80 chars), description (ADF JSON object), priority (JIRA enum value)
 - Description must be valid ADF with type="doc", version=1, and content array
@@ -406,24 +361,25 @@ Key requirements for stories.json:
 - Priority must be one of: "Highest", "High", "Medium", "Low", "Lowest"
 - Stories ordered so dependencies are satisfied sequentially (foundational first, dependent later)
 
-3. summary.md
+### 3. summary.md
 
 Summary of the epic and stories in markdown format
 
-Quality Standards
+## Quality Standards
 
-1. Clarity: Stories must be clear and unambiguous
-2. Completeness: All BRD requirements must be covered
-3. Testability: Acceptance criteria must be testable
-4. Estimability: Stories must be estimable
-5. Independence: Minimize dependencies where possible
-6. Negotiability: Stories should allow for discussion
-7. Valuable: Each story must deliver value
-8. Small: Stories should be completable in one sprint
+1. **Clarity**: Stories must be clear and unambiguous
+2. **Completeness**: All BRD requirements must be covered
+3. **Testability**: Acceptance criteria must be testable
+4. **Estimability**: Stories must be estimable
+5. **Independence**: Minimize dependencies where possible
+6. **Negotiability**: Stories should allow for discussion
+7. **Valuable**: Each story must deliver value
+8. **Small**: Stories should be completable in one sprint
 
-Validation Checklist
+## Validation Checklist
 
 Before finalizing, verify:
+
 - [ ] All BRD requirements are covered by stories
 - [ ] Impact analysis has been performed and documented
 - [ ] Breaking changes are identified and have dedicated stories
@@ -444,17 +400,19 @@ Before finalizing, verify:
 - [ ] summary.md provides human-readable overview
 - [ ] Impact severity is classified for each affected component
 
-Error Handling
+## Error Handling
 
 If the BRD is unclear or incomplete:
+
 1. Document assumptions made
 2. Flag areas needing clarification
 3. Suggest questions for stakeholders
 4. Proceed with best judgment
 
-Success Criteria
+## Success Criteria
 
 The output is successful when:
+
 1. All 3 required files are generated: epic.json, stories.json, summary.md
 2. epic.json contains valid JSON with title and description (ADF) fields
 3. stories.json contains valid JSON array with properly ordered stories

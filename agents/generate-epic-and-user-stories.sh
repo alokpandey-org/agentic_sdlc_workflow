@@ -10,36 +10,6 @@ set -e
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Check for required command-line tools
-echo "Checking required command-line tools..."
-MISSING_TOOLS=0
-
-# Check for jq
-if ! command -v jq &>/dev/null; then
-	echo "ERROR: 'jq' is not installed"
-	echo "  jq is required for JSON processing"
-	echo "  Install jq and try again"
-	MISSING_TOOLS=1
-fi
-
-# Check for adf2md
-if ! command -v adf2md &>/dev/null; then
-	echo "ERROR: 'adf2md' is not installed"
-	echo "  adf2md is required for converting ADF to markdown"
-	echo "  Install from: https://github.com/carylee/adf2md"
-	echo "  Quick install: npm install -g @carylee/adf2md"
-	MISSING_TOOLS=1
-fi
-
-if [ $MISSING_TOOLS -eq 1 ]; then
-	echo ""
-	echo "Please install the missing tools and run this script again"
-	exit 1
-fi
-
-echo "All required tools found ✓"
-echo ""
-
 # Source environment variables
 if [ -f "$SCRIPT_DIR/.env" ]; then
 	source "$SCRIPT_DIR/.env"
@@ -192,19 +162,23 @@ if [ -n "$EXISTING_APP_ARCH" ] && [ ! -f "$EXISTING_APP_ARCH" ]; then
 	exit 1
 fi
 
-# Clone Git repository if provided and repo directory doesn't exist
+# Clone Git repository if provided (always delete and re-clone for clean state)
 if [ -n "$GIT_REPO" ]; then
-	REPO_DIR="$WORKSPACE_ROOT/Inventory-system"
-	if [ ! -d "$REPO_DIR" ]; then
-		echo "Cloning repository from $GIT_REPO to $REPO_DIR..."
-		git clone "$GIT_REPO" "$REPO_DIR"
-		echo "Repository cloned successfully."
-		echo ""
-	else
-		echo "Repository directory already exists: $REPO_DIR"
-		echo "Skipping git clone."
-		echo ""
+	# Extract repo name from URL (last part without .git)
+	REPO_NAME=$(basename "$GIT_REPO" .git)
+	REPO_DIR="$WORKSPACE_ROOT/$REPO_NAME"
+
+	# Delete existing repo directory if it exists
+	if [ -d "$REPO_DIR" ]; then
+		echo "Deleting existing repository directory: $REPO_DIR"
+		rm -rf "$REPO_DIR"
 	fi
+
+	# Clone fresh copy
+	echo "Cloning repository from $GIT_REPO to $REPO_DIR..."
+	git clone "$GIT_REPO" "$REPO_DIR"
+	echo "Repository cloned successfully."
+	echo ""
 fi
 
 # Create output directory for epic & stories artifacts (start fresh each run)
@@ -343,11 +317,16 @@ echo "Created stories.md for review"
 echo ""
 
 echo "=========================================="
-echo "Review Files Generated"
+echo "Epic and Stories Generated"
 echo "=========================================="
-echo "Epic: $EPIC_STORIES_DIR/epic.md"
-echo "Stories: $EPIC_STORIES_DIR/stories.md"
-echo "Summary: $EPIC_STORIES_DIR/summary.md"
+echo "Output location: $EPIC_STORIES_DIR/"
+echo ""
+echo "Generated files:"
+echo "- epic.json"
+echo "- stories.json"
+echo "- epic.md"
+echo "- stories.md"
+echo "- summary.md"
 echo ""
 echo "Please review the generated epic and stories at: $EPIC_STORIES_DIR/"
 echo ""
@@ -362,21 +341,8 @@ while [ "$APPROVED" = false ]; do
 		APPROVED=true
 		;;
 	n | N | no | No | NO)
-		echo ""
-		echo "Epic and stories not approved."
-		echo "Please adjust the prompt or BRD and re-run the script."
-		echo ""
-		read -p "Do you want to re-run with adjusted prompt? (y/n): " rerun
-
-		if [[ "$rerun" =~ ^[Yy] ]]; then
-			echo ""
-			echo "Re-running agent with adjusted inputs..."
-			echo "Please modify the BRD or policy file and run the script again."
-			exit 0
-		else
-			echo "Exiting without creating JIRA items."
-			exit 0
-		fi
+		echo "Epic and stories not approved. Exiting."
+		exit 0
 		;;
 	*)
 		echo "Invalid input. Please enter 'y' or 'n'."

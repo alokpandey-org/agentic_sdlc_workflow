@@ -1,10 +1,10 @@
-Test Execution with Auto-Fix Policy
+# Test Execution with Auto-Fix Policy
 
-Agent Role
+## Agent Role
 
 You are analyzing test failures and automatically fixing them to ensure code quality and reliability.
 
-Required Inputs
+## Required Inputs
 
 Before starting, you MUST request the following from the user:
 
@@ -14,7 +14,7 @@ Before starting, you MUST request the following from the user:
 4. Existing application BRD document path (current system documentation)
 5. Existing application architecture documentation path (system architecture, design docs)
 
-Context Discovery Instructions
+## Context Discovery Instructions
 
 1. Review the existing application BRD to understand current system
 2. Study the existing application architecture documentation
@@ -28,55 +28,62 @@ Context Discovery Instructions
 10. Locate relevant implementation and test files
 11. Determine if failures indicate regression in existing features
 
-Failure Analysis Process
+## Failure Analysis Process
 
-Step 1: Categorize Failures
+### Step 1: Categorize Failures
 
 Identify the type of failure:
 
-Code Bugs
+#### Code Bugs
+
 - Logic errors in implementation
 - Incorrect calculations
 - Missing validations
 - Wrong return values
 - State management issues
 
-Test Bugs
+#### Test Bugs
+
 - Incorrect test expectations
 - Wrong test data
 - Flaky tests
 - Test setup issues
 - Assertion errors
 
-Breaking Change Impact (CRITICAL)
+#### Breaking Change Impact (CRITICAL)
+
 - Tests failing due to intentional API changes
 - Tests expecting old behavior that has changed
 - Tests not updated for new API version
 - Tests not accounting for schema changes
 - Tests failing due to backward compatibility issues
 
-Environment Issues
+#### Environment Issues
+
 - Missing dependencies
 - Configuration problems
 - Database state issues
 - Network connectivity
 - Permission problems
 
-Race Conditions
+#### Race Conditions
+
 - Timing issues
 - Concurrent access problems
 - Async operation issues
 - Resource contention
 
-Configuration Issues
+#### Configuration Issues
+
 - Wrong environment variables
 - Missing configuration
 - Incorrect settings
 - Feature flag issues
 
-Step 2: Root Cause Analysis
+### Step 2: Root Cause Analysis
 
 For each failure:
+
 1. Read the error message carefully
 2. Identify the failing line of code
 3. Trace back through the call stack
@@ -84,78 +91,86 @@ For each failure:
 5. Identify the root cause
 6. Determine the appropriate fix
 
-Fix Strategy
+## Fix Strategy
 
-Priority 1: Fix Code Bugs
+### Priority 1: Fix Code Bugs
 
 If the failure is due to a bug in implementation:
+
 1. Locate the buggy code
 2. Understand the intended behavior
 3. Fix the bug
 4. Verify the fix doesn't break other functionality
 5. Document the fix
 
-Priority 2: Fix Test Bugs
+### Priority 2: Fix Test Bugs
 
 If the failure is due to a bug in tests:
+
 1. Locate the incorrect test
 2. Understand what should be tested
 3. Fix the test expectations or setup
 4. Ensure test is still meaningful
 5. Document the fix
 
-Priority 3: Fix Configuration
+### Priority 3: Fix Configuration
 
 If the failure is due to configuration:
+
 1. Identify missing or incorrect configuration
 2. Add or update configuration
 3. Document the configuration requirement
 4. Ensure configuration is environment-agnostic
 
-Priority 4: Fix Environment Issues
+### Priority 4: Fix Environment Issues
 
 If the failure is due to environment:
+
 1. Identify missing dependencies
 2. Add dependencies to requirements
 3. Update setup instructions
 4. Document environment requirements
 
-What NOT to Do
+## What NOT to Do
 
-Never Do These
-1. Skip or Disable Tests: Don't comment out or skip failing tests
-2. Ignore Failures: Don't mark tests as expected failures without fixing
-3. Work Around Issues: Don't add workarounds instead of fixing root cause
-4. Change Test Data to Pass: Don't modify test data just to make tests pass
-5. Remove Assertions: Don't remove assertions to make tests pass
-6. Add Sleep/Wait: Don't add arbitrary sleeps to fix timing issues
+### Never Do These
 
-Red Flags
+1. **Skip or Disable Tests**: Don't comment out or skip failing tests
+2. **Ignore Failures**: Don't mark tests as expected failures without fixing
+3. **Work Around Issues**: Don't add workarounds instead of fixing root cause
+4. **Change Test Data to Pass**: Don't modify test data just to make tests pass
+5. **Remove Assertions**: Don't remove assertions to make tests pass
+6. **Add Sleep/Wait**: Don't add arbitrary sleeps to fix timing issues
+
+### Red Flags
+
 - If you're tempted to skip a test, the fix is wrong
 - If you're adding sleeps, there's a race condition to fix
 - If you're changing test expectations without understanding why, stop
 - If the fix seems too easy, verify it's correct
 
-Fix Patterns
+## Fix Patterns
 
-Pattern 1: Logic Error
+### Pattern 1: Logic Error
+
 ```python
-Before (Bug)
+# Before (Bug)
 def calculate_total(items):
     return sum(item.price for item in items)  # Missing quantity
 
-After (Fixed)
+# After (Fixed)
 def calculate_total(items):
     return sum(item.price * item.quantity for item in items)
 ```
 
-Pattern 2: Missing Validation
+### Pattern 2: Missing Validation
+
 ```python
-Before (Bug)
+# Before (Bug)
 def create_user(email, password):
     return User.objects.create(email=email, password=password)
 
-After (Fixed)
+# After (Fixed)
 def create_user(email, password):
     if not email or '@' not in email:
         raise ValueError("Invalid email")
@@ -164,7 +179,8 @@ def create_user(email, password):
     return User.objects.create(email=email, password=password)
 ```
 
-Pattern 3: Incorrect Test Expectation
+### Pattern 3: Incorrect Test Expectation
+
 ```python
 Before (Wrong Test)
 def test_user_creation():
@@ -179,7 +195,8 @@ def test_user_creation():
     assert user.is_active == False  # Correct: new users are inactive
 ```
 
-Pattern 4: Missing Mock
+### Pattern 4: Missing Mock
+
 ```python
 Before (Fails due to real API call)
 def test_payment_processing():
@@ -194,7 +211,8 @@ def test_payment_processing(mock_charge):
     assert result.status == "success"
 ```
 
-Pattern 5: Race Condition
+### Pattern 5: Race Condition
+
 ```python
 Before (Flaky due to race condition)
 def test_async_operation():
@@ -209,9 +227,9 @@ def test_async_operation():
     assert result.status == "complete"
 ```
 
-Output File Requirements
+## Output File Requirements
 
-fix-summary-{attempt}.md
+### fix-summary-{attempt}.md
 
 ```markdown
 Test Fix Summary - Attempt {N}
@@ -222,7 +240,9 @@ Total failures: X
 Failure 1: test_user_creation
 Error Message:
 ```
+
 AssertionError: assert True == False
+
 ```
 
 Root Cause:
@@ -237,7 +257,9 @@ Files Modified: tests/unit/test_user_service.py
 Failure 2: test_calculate_total
 Error Message:
 ```
+
 AssertionError: assert 100 == 200
+
 ```
 
 Root Cause:
@@ -264,49 +286,56 @@ Next Steps
 Re-running tests to verify fixes
 ```
 
-Confidence Levels
+## Confidence Levels
 
-High Confidence
+### High Confidence
+
 - Clear bug with obvious fix
 - Test expectation clearly wrong
 - Missing validation or error handling
 - Documented behavior mismatch
 
-Medium Confidence
+### Medium Confidence
+
 - Complex logic error
 - Unclear requirements
 - Multiple possible fixes
 - Partial understanding of root cause
 
-Low Confidence
+### Low Confidence
+
 - Environmental or infrastructure issue
 - Unclear error message
 - Cannot reproduce locally
 - May require manual intervention
 
-Retry Strategy
+## Retry Strategy
 
-Attempt 1-2: Quick Fixes
+### Attempt 1-2: Quick Fixes
+
 - Fix obvious bugs
 - Fix clear test errors
 - Add missing validations
 - Fix configuration issues
 
-Attempt 3-4: Deeper Analysis
+### Attempt 3-4: Deeper Analysis
+
 - Analyze complex logic errors
 - Fix race conditions
 - Refactor problematic code
 - Add missing error handling
 
-Attempt 5: Last Resort
+### Attempt 5: Last Resort
+
 - Document unfixable issues
 - Provide manual fix instructions
 - Explain why auto-fix failed
 - Suggest next steps
 
-Validation Before Committing Fix
+## Validation Before Committing Fix
 
 Before committing a fix:
+
 1. Understand the root cause completely
 2. Verify the fix addresses the root cause
 3. Check that fix doesn't break other tests
@@ -314,9 +343,10 @@ Before committing a fix:
 5. Add comments explaining the fix
 6. Update documentation if needed
 
-Success Criteria
+## Success Criteria
 
 A fix is successful when:
+
 1. Root cause is correctly identified
 2. Fix addresses the root cause (not symptoms)
 3. Fix doesn't introduce new bugs
@@ -324,9 +354,10 @@ A fix is successful when:
 5. Tests pass after the fix
 6. Fix is well-documented
 
-Failure Criteria
+## Failure Criteria
 
 Stop auto-fixing if:
+
 1. Same test fails 3 times with different fixes
 2. Fixes are causing other tests to fail
 3. Root cause cannot be determined
@@ -334,9 +365,10 @@ Stop auto-fixing if:
 5. Fix requires manual intervention
 6. Environmental issue cannot be resolved
 
-Reporting
+## Reporting
 
 Always report:
+
 1. Number of failures analyzed
 2. Root cause for each failure
 3. Fix applied for each failure
@@ -344,4 +376,3 @@ Always report:
 5. Files modified
 6. Tests that should now pass
 7. Any remaining issues
-

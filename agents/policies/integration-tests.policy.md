@@ -1,10 +1,10 @@
-Integration Test Generation Policy
+# Integration Test Generation Policy
 
-Agent Role
+## Agent Role
 
 You are generating comprehensive integration tests that verify end-to-end workflows and component interactions.
 
-Required Inputs
+## Required Inputs
 
 Before starting, you MUST request the following from the user:
 
@@ -15,7 +15,7 @@ Before starting, you MUST request the following from the user:
 5. Existing application BRD document path (current system documentation)
 6. Existing application architecture documentation path (system architecture, design docs)
 
-Context Discovery Instructions
+## Context Discovery Instructions
 
 1. Review the existing application BRD to understand current system
 2. Study the existing application architecture documentation
@@ -32,22 +32,24 @@ Context Discovery Instructions
 13. Review deployment and environment configuration
 14. Identify existing integration tests that need updates
 
-Integration Test Requirements
+## Integration Test Requirements
 
-Test Scope
+### Test Scope
 
 Integration tests verify:
-1. End-to-End Workflows: Complete user journeys from start to finish
-2. Component Interactions: How different parts of the system work together
-3. API Integration: Real HTTP requests and responses
-4. Database Integration: Real database operations (test database)
-5. External Services: Integration with external APIs (mocked or test endpoints)
-6. Data Flow: Data flowing correctly across system boundaries
-7. Business Processes: Complete business workflows
 
-What to Test
+1. **End-to-End Workflows**: Complete user journeys from start to finish
+2. **Component Interactions**: How different parts of the system work together
+3. **API Integration**: Real HTTP requests and responses
+4. **Database Integration**: Real database operations (test database)
+5. **External Services**: Integration with external APIs (mocked or test endpoints)
+6. **Data Flow**: Data flowing correctly across system boundaries
+7. **Business Processes**: Complete business workflows
 
-API Endpoints
+### What to Test
+
+#### API Endpoints
+
 - Complete request/response cycle
 - Authentication and authorization
 - Request validation
@@ -59,7 +61,8 @@ API Endpoints
 - Backward compatibility with old API versions
 - Deprecation warnings in responses
 
-Database Operations
+#### Database Operations
+
 - CRUD operations with real database
 - Transaction handling
 - Data integrity and constraints
@@ -69,34 +72,39 @@ Database Operations
 - Data migration correctness
 - Rollback procedures
 
-Cross-Component Workflows
+#### Cross-Component Workflows
+
 - User registration → Email verification → Login
 - Order creation → Payment → Fulfillment
 - Data import → Processing → Export
 - Multi-step business processes
 
-External Integrations
+#### External Integrations
+
 - Third-party API calls (mocked or test environment)
 - Message queue operations
 - Cache operations
 - File storage operations
 - Email sending (test mode)
 
-Data Validation
+#### Data Validation
+
 - Data consistency across layers
 - Business rule enforcement
 - Validation across API boundaries
 - Data transformation accuracy
 
-Regression Testing (CRITICAL)
+#### Regression Testing (CRITICAL)
+
 - All existing workflows affected by changes
 - Existing integrations with modified components
 - End-to-end flows that use changed features
 - Backward compatibility of existing APIs
 
-Test Organization
+### Test Organization
 
-File Structure
+#### File Structure
+
 ```
 tests/integration/
 ├── test_user_workflows.py
@@ -108,14 +116,16 @@ tests/integration/
 └── conftest.py
 ```
 
-Test Naming
-- File: `test_feature_name.py`
-- Class: `TestFeatureIntegration`
-- Method: `test_complete_workflow_scenario`
+#### Test Naming
 
-Test Patterns
+- **File**: `test_feature_name.py`
+- **Class**: `TestFeatureIntegration`
+- **Method**: `test_complete_workflow_scenario`
 
-End-to-End Workflow Test
+### Test Patterns
+
+#### End-to-End Workflow Test
+
 ```python
 def test_user_registration_and_login_workflow():
     # Step 1: Register user
@@ -125,12 +135,12 @@ def test_user_registration_and_login_workflow():
     })
     assert response.status_code == 201
     user_id = response.json()['id']
-    
+
     # Step 2: Verify email (simulate)
     verify_token = get_verification_token(user_id)
     response = client.get(f'/api/verify/{verify_token}')
     assert response.status_code == 200
-    
+
     # Step 3: Login
     response = client.post('/api/login', json={
         'email': 'test@example.com',
@@ -140,17 +150,18 @@ def test_user_registration_and_login_workflow():
     assert 'access_token' in response.json()
 ```
 
-API Integration Test
+#### API Integration Test
+
 ```python
 def test_api_create_and_retrieve():
     # Create resource
-    create_response = client.post('/api/items', 
+    create_response = client.post('/api/items',
         json={'name': 'Test Item'},
         headers={'Authorization': f'Bearer {token}'}
     )
     assert create_response.status_code == 201
     item_id = create_response.json()['id']
-    
+
     # Retrieve resource
     get_response = client.get(f'/api/items/{item_id}',
         headers={'Authorization': f'Bearer {token}'}
@@ -159,9 +170,10 @@ def test_api_create_and_retrieve():
     assert get_response.json()['name'] == 'Test Item'
 ```
 
-Test Environment Setup
+### Test Environment Setup
 
-Database Setup
+#### Database Setup
+
 ```python
 @pytest.fixture(scope='session')
 def test_database():
@@ -179,7 +191,8 @@ def clean_database(test_database):
     yield test_database
 ```
 
-API Client Setup
+#### API Client Setup
+
 ```python
 @pytest.fixture
 def api_client():
@@ -194,7 +207,8 @@ def authenticated_client(api_client):
     return api_client
 ```
 
-Test Data Setup
+#### Test Data Setup
+
 ```python
 @pytest.fixture
 def test_data(clean_database):
@@ -204,15 +218,16 @@ def test_data(clean_database):
     return {'users': users, 'products': products}
 ```
 
-Testing Breaking Changes and API Versioning
+## Testing Breaking Changes and API Versioning
 
-CRITICAL: When changes affect existing integrations, comprehensive regression and compatibility testing is required.
+**CRITICAL**: When changes affect existing integrations, comprehensive regression and compatibility testing is required.
 
-1. API Versioning Integration Tests
+### 1. API Versioning Integration Tests
 
 When API versioning is implemented:
 
-Test Both API Versions
+#### Test Both API Versions
+
 ```python
 class TestUserAPIV1Integration:
     """Integration tests for deprecated v1 API"""
@@ -309,7 +324,7 @@ class TestAPIVersionRouting:
         assert 'version' in response.json()['error'].lower()
 ```
 
-2. Database Migration Integration Tests
+### 2. Database Migration Integration Tests
 
 When schema changes occur:
 
@@ -372,7 +387,7 @@ class TestDatabaseMigration:
         assert user_count == 1000
 ```
 
-3. Regression Testing for Existing Workflows
+### 3. Regression Testing for Existing Workflows
 
 When changes affect existing features:
 
@@ -419,7 +434,7 @@ class TestExistingWorkflowsRegression:
         assert response.json()['status'] == 'received'
 ```
 
-4. Cross-Version Compatibility Tests
+### 4. Cross-Version Compatibility Tests
 
 Test interactions between old and new versions:
 
@@ -459,20 +474,21 @@ class TestCrossVersionCompatibility:
         assert 'preferences' not in v1_response.json()
 ```
 
-5. Mandatory Integration Tests for Breaking Changes
+### 5. Mandatory Integration Tests for Breaking Changes
 
 Always include:
 
-1. Complete Regression Suite: All existing workflows
-2. API Version Tests: Both old and new versions
-3. Migration Tests: Forward and backward migrations
-4. Cross-Version Tests: Data compatibility between versions
-5. Integration Point Tests: All affected external integrations
-6. Performance Tests: Ensure changes don't degrade performance
+1. **Complete Regression Suite**: All existing workflows
+2. **API Version Tests**: Both old and new versions
+3. **Migration Tests**: Forward and backward migrations
+4. **Cross-Version Tests**: Data compatibility between versions
+5. **Integration Point Tests**: All affected external integrations
+6. **Performance Tests**: Ensure changes don't degrade performance
 
-Mocking Strategy
+## Mocking Strategy
 
-Mock External Services
+### Mock External Services
+
 ```python
 @pytest.fixture
 def mock_payment_service():
@@ -484,51 +500,59 @@ def mock_payment_service():
         yield mock
 ```
 
-Use Test Endpoints
+### Use Test Endpoints
+
 ```python
-For services with test environments
+# For services with test environments
 PAYMENT_API_URL = os.getenv('PAYMENT_API_URL', 'https://test.payment.com')
 ```
 
-Test Data Management
+## Test Data Management
 
-Fixtures
+### Fixtures
+
 - Use realistic but anonymized data
 - Create reusable fixtures
 - Clean up after each test
 - Use factories for complex objects
 
-Test Database
+### Test Database
+
 - Use separate test database
 - Run migrations before tests
 - Truncate tables between tests
 - Use transactions for isolation
 
-Performance Considerations
+## Performance Considerations
 
-Test Speed
+### Test Speed
+
 - Integration tests can be slower than unit tests
 - Aim for < 5 seconds per test
 - Use database transactions for speed
 - Parallelize tests where possible
 
-Resource Management
+### Resource Management
+
 - Clean up resources after tests
 - Close database connections
 - Clear caches
 - Remove temporary files
 
-Output File Requirements
+## Output File Requirements
 
-1. test-summary.md
-```markdown
+### 1. test-summary.md
+
+````markdown
 Integration Test Summary
 
 Test Files Created
+
 - tests/integration/test_user_workflows.py (8 scenarios)
 - tests/integration/test_api_endpoints.py (12 scenarios)
 
 Test Scenarios Covered
+
 1. User registration and login workflow
 2. Order creation and payment processing
 3. API CRUD operations
@@ -536,12 +560,14 @@ Test Scenarios Covered
 5. ...
 
 Test Data Requirements
+
 - Test database with schema
 - Test users with different roles
 - Sample products and prices
 - Mock payment gateway
 
 Environment Setup
+
 ```bash
 Create test database
 createdb inventree_test
@@ -553,51 +579,60 @@ Set environment variables
 export TEST_DATABASE_URL=postgresql://localhost/inventree_test
 export PAYMENT_API_URL=https://test.payment.com
 ```
+````
 
-Test Execution
+**Test Execution:**
+
 ```bash
-Run all integration tests
+# Run all integration tests
 pytest tests/integration/
 
-Run specific test file
+# Run specific test file
 pytest tests/integration/test_user_workflows.py
 
-Run with coverage
+# Run with coverage
 pytest tests/integration/ --cov=src --cov-report=html
 ```
-```
 
-2. test-environment.md
+### 2. test-environment.md
+
 ```markdown
 Test Environment Setup
 
 Required Services
+
 - PostgreSQL test database
 - Redis test instance
 - Mock payment gateway
 
 Configuration
+
 - Environment variables
 - Test configuration files
 - Feature flags
 
 Test Data Setup
+
 - Database migrations
 - Seed data scripts
 - Test fixtures
 
 Cleanup Procedures
+
 - Truncate tables after tests
 - Clear Redis cache
 - Remove temporary files
 ```
 
-3. test-scenarios.md
-```markdown
-Integration Test Scenarios
+### 3. test-scenarios.md
 
-Scenario 1: User Registration Flow
-Steps:
+```markdown
+# Integration Test Scenarios
+
+## Scenario 1: User Registration Flow
+
+**Steps:**
+
 1. User submits registration form
 2. System validates email uniqueness
 3. System creates user account
@@ -605,13 +640,16 @@ Steps:
 5. User clicks verification link
 6. System activates account
 
-Expected Outcome:
+**Expected Outcome:**
+
 - User account created
 - Verification email sent
 - Account activated after verification
 
-Scenario 2: Multi-Currency Order
-Steps:
+## Scenario 2: Multi-Currency Order
+
+**Steps:**
+
 1. User browses products in USD
 2. User switches to EUR
 3. Prices converted using exchange rate
@@ -620,15 +658,17 @@ Steps:
 6. Payment processed in EUR
 7. Order stored with EUR prices and exchange rate
 
-Expected Outcome:
+**Expected Outcome:**
+
 - Prices correctly converted
 - Order stored with original currency
 - Exchange rate locked at checkout
 ```
 
-Validation Checklist
+## Validation Checklist
 
 Before finalizing, verify:
+
 - [ ] All user workflows are tested
 - [ ] API endpoints are tested end-to-end
 - [ ] Database operations are tested
@@ -640,9 +680,10 @@ Before finalizing, verify:
 - [ ] Tests are repeatable
 - [ ] Documentation is complete
 
-Success Criteria
+## Success Criteria
 
 The integration tests are successful when:
+
 1. All user workflows are covered
 2. Tests verify end-to-end functionality
 3. Tests use real database (test instance)
@@ -651,4 +692,3 @@ The integration tests are successful when:
 6. Environment setup is documented
 7. Test data is realistic
 8. All tests pass
-
