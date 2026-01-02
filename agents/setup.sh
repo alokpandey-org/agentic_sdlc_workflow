@@ -226,6 +226,17 @@ fi
 
 echo ""
 echo "=========================================="
+echo "Configuring Git Credentials"
+echo "=========================================="
+echo ""
+
+# Configure git to use GitHub token for authentication
+echo "Setting up git credential helper to use GITHUB_TOKEN..."
+git config --global credential.helper "!f() { echo \"username=x-access-token\"; echo \"password=$GITHUB_TOKEN\"; }; f"
+echo "✓ Git configured to use GITHUB_TOKEN for authentication"
+
+echo ""
+echo "=========================================="
 echo "Setup Complete!"
 echo "=========================================="
 echo ""

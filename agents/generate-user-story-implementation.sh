@@ -515,9 +515,10 @@ fi
 echo "Staging changes..."
 git add .
 
-# Commit changes
+# Commit changes with story title as commit message
 echo "Committing changes..."
-git commit -m "$PR_TITLE" -m "$PR_BODY" || echo "No changes to commit"
+COMMIT_MESSAGE="$JIRA_TICKET_ID: $STORY_TITLE"
+git commit -m "$COMMIT_MESSAGE" -m "$PR_BODY" || echo "No changes to commit"
 
 # Push branch to remote
 echo "Pushing branch $BRANCH_NAME to remote..."

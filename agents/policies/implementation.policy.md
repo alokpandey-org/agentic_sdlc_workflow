@@ -21,6 +21,16 @@ You are implementing a user story in an existing codebase following established 
 13. Check for API versioning requirements
 14. Analyze data migration needs
 
+## Working Methodology
+
+After gathering all required context:
+
+1. Create a comprehensive implementation plan breaking down the work into logical tasks
+2. Use task management tools to track each task
+3. Execute tasks one by one to maintain focus and avoid being overwhelmed
+4. Complete each task fully before moving to the next
+5. Validate each completed task against acceptance criteria
+
 ## Implementation Requirements
 
 ### Code Quality Standards
@@ -441,8 +451,6 @@ Before finalizing, verify:
 - [ ] Code follows existing patterns
 - [ ] Error handling is comprehensive
 - [ ] Logging is appropriate
-- [ ] Documentation is updated
-- [ ] Configuration changes are documented
 - [ ] Migration steps are clear
 - [ ] Rollback procedure is defined
 - [ ] No tests are included (tests come later)
