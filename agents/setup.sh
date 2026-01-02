@@ -68,11 +68,11 @@ fi
 
 # Check for gh (GitHub CLI)
 if ! command -v gh &>/dev/null; then
-	echo "❌ WARNING: 'gh' (GitHub CLI) is not installed"
+	echo "❌ ERROR: 'gh' (GitHub CLI) is not installed"
 	echo "   gh is required for creating pull requests automatically"
 	echo "   Install it from: https://cli.github.com/"
 	echo "   Quick install: brew install gh (macOS)"
-	echo "   Note: You can still use the agents, but PR creation will be manual"
+	MISSING_TOOLS=1
 else
 	echo "✓ gh found: $(command -v gh)"
 fi
@@ -138,8 +138,9 @@ if test_jira_connection; then
 		echo "JIRA setup complete and verified!"
 	else
 		echo ""
-		echo "WARNING: JIRA connection works but project '$JIRA_PROJECT_KEY' not accessible"
+		echo "ERROR: JIRA connection works but project '$JIRA_PROJECT_KEY' not accessible"
 		echo "   Please verify the project key or your permissions"
+		exit 1
 	fi
 else
 	echo ""
@@ -173,8 +174,10 @@ if [ -n "$GITHUB_USER" ]; then
 	if [ -n "$REPO_CHECK" ]; then
 		echo "Repository access verified: $REPO_OWNER/$REPO_NAME"
 	else
-		echo "WARNING: Cannot access repository: $REPO_OWNER/$REPO_NAME"
+		echo "ERROR: Cannot access repository: $REPO_OWNER/$REPO_NAME"
 		echo "   Token may not have repository permissions"
+		echo "   Please verify your GITHUB_TOKEN has access to this repository"
+		exit 1
 	fi
 else
 	echo "ERROR: GitHub connection failed"
@@ -211,9 +214,10 @@ if command -v gh &>/dev/null; then
 				echo "   Authenticated as: $GH_USER"
 			fi
 		else
-			echo "WARNING: Failed to authenticate GitHub CLI"
-			echo "   You can manually authenticate with: gh auth login"
-			echo "   Or the agents will use GITHUB_TOKEN environment variable"
+			echo "ERROR: Failed to authenticate GitHub CLI"
+			echo "   Please manually authenticate with: gh auth login"
+			echo "   Or check that your GITHUB_TOKEN is valid"
+			exit 1
 		fi
 	fi
 
