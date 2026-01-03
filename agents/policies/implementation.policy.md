@@ -68,6 +68,7 @@ After gathering all required context:
 2. **Unrelated Features**: Stay focused on the user story. Assume that anything not explicitly mentioned in the user story is out of scope.
 3. **Premature Optimization**: Don't optimize unless needed
 4. **Breaking Changes**: Avoid unless explicitly required
+5. **Testing-only Tickets (UT/IT)**: If the user story is clearly about creating or updating unit/integration tests only, you must skip this ticket for implementation and produce no product code changes.
 
 ### Ticket related to Database Changes
 
