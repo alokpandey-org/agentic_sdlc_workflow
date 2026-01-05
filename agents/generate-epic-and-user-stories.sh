@@ -52,6 +52,10 @@ while [[ $# -gt 0 ]]; do
 		WORKSPACE_ROOT="$2"
 		shift 2
 		;;
+	--git-repo)
+		GIT_REPO="$2"
+		shift 2
+		;;
 	--context-dirs)
 		CONTEXT_DIRS="$2"
 		shift 2
@@ -62,7 +66,7 @@ while [[ $# -gt 0 ]]; do
 		;;
 	*)
 		echo "Unknown option: $1"
-		echo "Usage: $0 [-i|--interactive] [--brd-path PATH] [--existing-app-brd PATH] [--existing-app-arch PATH] [--workspace-root PATH] [--context-dirs DIRS] [--policy-file FILE]"
+		echo "Usage: $0 [-i|--interactive] [--brd-path PATH] [--existing-app-brd PATH] [--existing-app-arch PATH] [--workspace-root PATH] [--git-repo URL] [--context-dirs DIRS] [--policy-file FILE]"
 		exit 1
 		;;
 	esac
