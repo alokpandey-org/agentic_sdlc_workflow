@@ -21,7 +21,6 @@ source "$SCRIPT_DIR/jira-utils.sh"
 # Default values from environment or hardcoded
 WORKSPACE_ROOT="${DEMO_WORKSPACE_ROOT:-}"
 JIRA_TICKET_ID=""
-EPIC_ID=""
 EXISTING_APP_BRD="${DEMO_EXISTING_APP_BRD:-}"
 EXISTING_APP_ARCH="${DEMO_EXISTING_APP_ARCH:-}"
 NEW_BRD=""
@@ -44,10 +43,6 @@ while [[ $# -gt 0 ]]; do
 		;;
 	--jira-ticket-id)
 		JIRA_TICKET_ID="$2"
-		shift 2
-		;;
-	--epic-id)
-		EPIC_ID="$2"
 		shift 2
 		;;
 	--existing-app-brd)
@@ -80,7 +75,7 @@ while [[ $# -gt 0 ]]; do
 		;;
 	*)
 		echo "Unknown option: $1"
-		echo "Usage: $0 [-i|--interactive] [--workspace-root PATH] [--jira-ticket-id ID] [--epic-id ID] [--existing-app-brd PATH] [--existing-app-arch PATH] [--new-brd PATH] [--git-repo URL] [--base-branch BRANCH] [--context-dirs DIRS] [--policy-file FILE]"
+		echo "Usage: $0 [-i|--interactive] [--workspace-root PATH] [--jira-ticket-id ID] [--existing-app-brd PATH] [--existing-app-arch PATH] [--new-brd PATH] [--git-repo URL] [--base-branch BRANCH] [--context-dirs DIRS] [--policy-file FILE]"
 		exit 1
 		;;
 	esac
@@ -113,11 +108,6 @@ if [ "$INTERACTIVE_MODE" = true ]; then
 	# Prompt for JIRA ticket ID
 	if [ -z "$JIRA_TICKET_ID" ]; then
 		read -p "Enter JIRA ticket ID (Story): " JIRA_TICKET_ID
-	fi
-
-	# Prompt for Epic ID
-	if [ -z "$EPIC_ID" ]; then
-		read -p "Enter Epic ID: " EPIC_ID
 	fi
 
 	# Prompt for existing application BRD
@@ -160,7 +150,6 @@ fi
 if [ "$INTERACTIVE_MODE" = false ]; then
 	WORKSPACE_ROOT="${WORKSPACE_ROOT:-${ENV_WORKSPACE_ROOT:-.}}"
 	JIRA_TICKET_ID="${JIRA_TICKET_ID:-${ENV_JIRA_TICKET_ID}}"
-	EPIC_ID="${EPIC_ID:-${ENV_EPIC_ID}}"
 	EXISTING_APP_BRD="${EXISTING_APP_BRD:-${ENV_EXISTING_APP_BRD}}"
 	EXISTING_APP_ARCH="${EXISTING_APP_ARCH:-${ENV_EXISTING_APP_ARCH}}"
 	NEW_BRD="${NEW_BRD:-${ENV_NEW_BRD}}"
@@ -180,12 +169,6 @@ fi
 if [ -z "$JIRA_TICKET_ID" ]; then
 	echo "Error: JIRA ticket ID is required"
 	echo "Provide via --jira-ticket-id argument, interactive mode (-i), or ENV_JIRA_TICKET_ID environment variable"
-	exit 1
-fi
-
-if [ -z "$EPIC_ID" ]; then
-	echo "Error: Epic ID is required"
-	echo "Provide via --epic-id argument, interactive mode (-i), or ENV_EPIC_ID environment variable"
 	exit 1
 fi
 
@@ -334,15 +317,6 @@ test_jira_connection
 
 echo ""
 
-# Verify Epic ID is actually an Epic
-echo "Verifying Epic ID: $EPIC_ID"
-if ! verify_issue_type "$EPIC_ID" "Epic"; then
-	echo "Error: $EPIC_ID is not a valid Epic"
-	exit 1
-fi
-
-echo ""
-
 # Verify Story ID is actually a Story
 echo "Verifying Story ID: $JIRA_TICKET_ID"
 if ! verify_issue_type "$JIRA_TICKET_ID" "Story"; then
@@ -350,20 +324,6 @@ if ! verify_issue_type "$JIRA_TICKET_ID" "Story"; then
 	exit 1
 fi
 
-echo ""
-
-# Fetch Epic details from JIRA
-echo "Fetching Epic details from JIRA..."
-EPIC_JSON=$(get_jira_issue "$EPIC_ID")
-if [ $? -ne 0 ]; then
-	echo "Error: Failed to fetch Epic from JIRA"
-	exit 1
-fi
-
-EPIC_TITLE=$(echo "$EPIC_JSON" | jq -r '.fields.summary // empty')
-EPIC_DESCRIPTION_ADF=$(echo "$EPIC_JSON" | jq -c '.fields.description // {}')
-
-echo "Epic: $EPIC_ID - $EPIC_TITLE"
 echo ""
 
 # Fetch Story details from JIRA
@@ -382,13 +342,40 @@ echo "Story: $JIRA_TICKET_ID - $STORY_TITLE"
 echo "Priority: $STORY_PRIORITY"
 echo ""
 
-# Verify story is linked to the epic
-STORY_EPIC_KEY=$(echo "$STORY_JSON" | jq -r '.fields.parent.key // empty')
-if [ -n "$STORY_EPIC_KEY" ] && [ "$STORY_EPIC_KEY" != "$EPIC_ID" ]; then
-	echo "Error: Story $JIRA_TICKET_ID is linked to Epic $STORY_EPIC_KEY, but you specified Epic $EPIC_ID"
+# Derive Epic ID from Story's parent
+echo "Deriving Epic from Story's parent..."
+EPIC_ID=$(echo "$STORY_JSON" | jq -r '.fields.parent.key // empty')
+
+if [ -z "$EPIC_ID" ]; then
+	echo "Error: Story $JIRA_TICKET_ID does not have a parent Epic"
+	echo "Please ensure the Story is linked to an Epic in JIRA"
 	exit 1
 fi
 
+echo "Found parent Epic: $EPIC_ID"
+echo ""
+
+# Verify parent is actually an Epic
+echo "Verifying parent is an Epic..."
+if ! verify_issue_type "$EPIC_ID" "Epic"; then
+	echo "Error: Parent $EPIC_ID is not a valid Epic"
+	exit 1
+fi
+
+echo ""
+
+# Fetch Epic details from JIRA
+echo "Fetching Epic details from JIRA..."
+EPIC_JSON=$(get_jira_issue "$EPIC_ID")
+if [ $? -ne 0 ]; then
+	echo "Error: Failed to fetch Epic from JIRA"
+	exit 1
+fi
+
+EPIC_TITLE=$(echo "$EPIC_JSON" | jq -r '.fields.summary // empty')
+EPIC_DESCRIPTION_ADF=$(echo "$EPIC_JSON" | jq -c '.fields.description // {}')
+
+echo "Epic: $EPIC_ID - $EPIC_TITLE"
 echo ""
 
 # Load policy file
