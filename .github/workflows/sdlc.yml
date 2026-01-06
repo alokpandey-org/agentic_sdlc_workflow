@@ -1,0 +1,190 @@
+name: SDLC Workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      brd_path:
+        description: 'Path to BRD file (required)'
+        required: true
+        type: string
+      existing_app_brd:
+        description: 'Path to existing application BRD (optional)'
+        required: false
+        type: string
+      existing_app_arch:
+        description: 'Path to existing application architecture (optional)'
+        required: false
+        type: string
+      workspace_root:
+        description: 'Workspace root directory'
+        required: false
+        type: string
+        default: '.'
+      git_repo:
+        description: 'Git repository URL (optional)'
+        required: false
+        type: string
+      context_dirs:
+        description: 'Context directories (comma-separated)'
+        required: false
+        type: string
+        default: 'src,docs'
+      policy_file:
+        description: 'Policy file path (optional)'
+        required: false
+        type: string
+
+jobs:
+  # Job 1: Generate Epic and Stories in JIRA
+  generate-epic-stories:
+    name: Generate Epic and Stories
+    runs-on: self-hosted
+    outputs:
+      epic_key: ${{ steps.read-artifacts.outputs.epic_key }}
+      story_keys: ${{ steps.read-artifacts.outputs.story_keys }}
+      story_count: ${{ steps.read-artifacts.outputs.story_count }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Epic & Stories Generator
+        env:
+          JIRA_TOKEN: ${{ secrets.JIRA_TOKEN }}
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+          JIRA_PROJECT_KEY: ${{ secrets.JIRA_PROJECT_KEY }}
+        run: |
+          chmod +x agents/generate-epic-and-user-stories.sh
+          ./agents/generate-epic-and-user-stories.sh \
+            --brd-path "${{ inputs.brd_path }}" \
+            ${{ inputs.existing_app_brd && format('--existing-app-brd "{0}"', inputs.existing_app_brd) || '' }} \
+            ${{ inputs.existing_app_arch && format('--existing-app-arch "{0}"', inputs.existing_app_arch) || '' }} \
+            --workspace-root "${{ inputs.workspace_root }}" \
+            ${{ inputs.git_repo && format('--git-repo "{0}"', inputs.git_repo) || '' }} \
+            --context-dirs "${{ inputs.context_dirs }}" \
+            ${{ inputs.policy_file && format('--policy-file "{0}"', inputs.policy_file) || '' }}
+
+      - name: Read JIRA artifacts
+        id: read-artifacts
+        run: |
+          ARTIFACTS_FILE="sdlc-artifacts/epic-stories/jira-artifacts.json"
+          if [ -f "$ARTIFACTS_FILE" ]; then
+            echo "epic_key=$(jq -r '.epic_key' $ARTIFACTS_FILE)" >> $GITHUB_OUTPUT
+            echo "story_keys=$(jq -c '.story_keys' $ARTIFACTS_FILE)" >> $GITHUB_OUTPUT
+            echo "story_count=$(jq -r '.story_count' $ARTIFACTS_FILE)" >> $GITHUB_OUTPUT
+            
+            echo "Epic Key: $(jq -r '.epic_key' $ARTIFACTS_FILE)"
+            echo "Story Count: $(jq -r '.story_count' $ARTIFACTS_FILE)"
+            echo "Story Keys: $(jq -c '.story_keys' $ARTIFACTS_FILE)"
+          else
+            echo "Error: JIRA artifacts file not found"
+            exit 1
+          fi
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: epic-stories-artifacts
+          path: sdlc-artifacts/epic-stories/
+          retention-days: 30
+
+  # Job 2: Manual approval gate before implementation
+  approve-implementation:
+    name: Approve Implementation
+    needs: generate-epic-stories
+    runs-on: self-hosted
+    environment: approval
+    steps:
+      - name: Display Epic and Stories
+        run: |
+          echo "Epic Key: ${{ needs.generate-epic-stories.outputs.epic_key }}"
+          echo "Story Count: ${{ needs.generate-epic-stories.outputs.story_count }}"
+          echo "Story Keys: ${{ needs.generate-epic-stories.outputs.story_keys }}"
+          echo ""
+          echo "Waiting for manual approval to proceed with implementation..."
+
+  # Job 3: Implement First Story
+  implement-first-story:
+    name: Implement First Story
+    needs: [generate-epic-stories, approve-implementation]
+    runs-on: self-hosted
+    outputs:
+      pr_url: ${{ steps.read-pr-info.outputs.pr_url }}
+      pr_number: ${{ steps.read-pr-info.outputs.pr_number }}
+      story_key: ${{ steps.get-first-story.outputs.story_key }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download epic-stories artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: epic-stories-artifacts
+          path: sdlc-artifacts/epic-stories/
+
+      - name: Get first story key
+        id: get-first-story
+        run: |
+          STORY_KEYS='${{ needs.generate-epic-stories.outputs.story_keys }}'
+          FIRST_STORY=$(echo $STORY_KEYS | jq -r '.[0]')
+          echo "story_key=$FIRST_STORY" >> $GITHUB_OUTPUT
+          echo "First Story Key: $FIRST_STORY"
+
+      - name: Run Implementation Generator
+        env:
+          JIRA_TOKEN: ${{ secrets.JIRA_TOKEN }}
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          chmod +x agents/generate-user-story-implementation.sh
+          ./agents/generate-user-story-implementation.sh \
+            --jira-ticket-id "${{ steps.get-first-story.outputs.story_key }}" \
+            --workspace-root "${{ inputs.workspace_root }}" \
+            ${{ inputs.existing_app_brd && format('--existing-app-brd "{0}"', inputs.existing_app_brd) || '' }} \
+            ${{ inputs.existing_app_arch && format('--existing-app-arch "{0}"', inputs.existing_app_arch) || '' }} \
+            ${{ inputs.git_repo && format('--git-repo "{0}"', inputs.git_repo) || '' }} \
+            --context-dirs "${{ inputs.context_dirs }}"
+
+      - name: Read PR info
+        id: read-pr-info
+        run: |
+          PR_INFO_FILE="sdlc-artifacts/implementation/${{ steps.get-first-story.outputs.story_key }}/pr-info.json"
+          if [ -f "$PR_INFO_FILE" ]; then
+            echo "pr_url=$(jq -r '.pr_url' $PR_INFO_FILE)" >> $GITHUB_OUTPUT
+            echo "pr_number=$(jq -r '.pr_number' $PR_INFO_FILE)" >> $GITHUB_OUTPUT
+
+            echo "PR URL: $(jq -r '.pr_url' $PR_INFO_FILE)"
+            echo "PR Number: $(jq -r '.pr_number' $PR_INFO_FILE)"
+          else
+            echo "Warning: PR info file not found at $PR_INFO_FILE"
+            echo "pr_url=Not available" >> $GITHUB_OUTPUT
+            echo "pr_number=0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload implementation artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: implementation-artifacts-${{ steps.get-first-story.outputs.story_key }}
+          path: sdlc-artifacts/implementation/${{ steps.get-first-story.outputs.story_key }}/
+          retention-days: 30
+
+  # Job 4: Display PR and wait for approval
+  approve-pr:
+    name: Approve Pull Request
+    needs: [generate-epic-stories, implement-first-story]
+    runs-on: self-hosted
+    environment: approval
+    steps:
+      - name: Display PR Information
+        run: |
+          echo "=========================================="
+          echo "Pull Request Created"
+          echo "=========================================="
+          echo "Story: ${{ needs.implement-first-story.outputs.story_key }}"
+          echo "PR Number: #${{ needs.implement-first-story.outputs.pr_number }}"
+          echo "PR URL: ${{ needs.implement-first-story.outputs.pr_url }}"
+          echo "=========================================="
+          echo ""
+          echo "Please review the PR and approve to continue"
+          echo ""
+          echo "View PR: ${{ needs.implement-first-story.outputs.pr_url }}"
+

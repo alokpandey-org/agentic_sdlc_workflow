@@ -460,23 +460,30 @@ echo "Please review the generated implementation at: $IMPLEMENTATION_ARTIFACTS_D
 echo ""
 
 # Approval workflow
-APPROVED=false
-while [ "$APPROVED" = false ]; do
-	read -p "Approve and create Pull Request in GitHub? (y/n): " approval
+# In non-interactive mode, skip approval and proceed to PR creation
+if [ "$INTERACTIVE_MODE" = false ]; then
+	echo "Non-interactive mode: Proceeding to PR creation automatically"
+	APPROVED=true
+else
+	# Interactive mode: ask for approval
+	APPROVED=false
+	while [ "$APPROVED" = false ]; do
+		read -p "Approve and create Pull Request in GitHub? (y/n): " approval
 
-	case $approval in
-	y | Y | yes | Yes | YES)
-		APPROVED=true
-		;;
-	n | N | no | No | NO)
-		echo "Implementation not approved. Exiting."
-		exit 0
-		;;
-	*)
-		echo "Invalid input. Please enter 'y' or 'n'."
-		;;
-	esac
-done
+		case $approval in
+		y | Y | yes | Yes | YES)
+			APPROVED=true
+			;;
+		n | N | no | No | NO)
+			echo "Implementation not approved. Exiting."
+			exit 0
+			;;
+		*)
+			echo "Invalid input. Please enter 'y' or 'n'."
+			;;
+		esac
+	done
+fi
 
 echo ""
 echo "=========================================="
@@ -544,6 +551,20 @@ if command -v gh &>/dev/null; then
 		# Save PR number and URL for next agents
 		echo "$PR_NUMBER" >"$IMPLEMENTATION_ARTIFACTS_DIR/pr-number.txt"
 		echo "$PR_URL" >"$IMPLEMENTATION_ARTIFACTS_DIR/pr-url.txt"
+
+		# Save PR info as JSON for GitHub Actions workflow
+		PR_INFO_FILE="$IMPLEMENTATION_ARTIFACTS_DIR/pr-info.json"
+		cat >"$PR_INFO_FILE" <<EOF
+{
+  "pr_number": $PR_NUMBER,
+  "pr_url": "$PR_URL",
+  "branch": "$BRANCH_NAME",
+  "jira_ticket": "$JIRA_TICKET_ID",
+  "story_title": "$STORY_TITLE",
+  "created_at": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+}
+EOF
+		echo "PR info saved to: $PR_INFO_FILE"
 
 		echo ""
 		echo "View Pull Request: $PR_URL"

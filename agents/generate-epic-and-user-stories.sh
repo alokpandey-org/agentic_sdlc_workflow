@@ -28,6 +28,8 @@ CONTEXT_DIRS=""
 ARTIFACTS_DIR="sdlc-artifacts"
 INTERACTIVE_MODE=false
 POLICY_FILE="$SCRIPT_DIR/policies/epic-stories-generation.policy.md"
+GENERATE_ONLY=false
+PUBLISH_ONLY=false
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -64,9 +66,17 @@ while [[ $# -gt 0 ]]; do
 		POLICY_FILE="$2"
 		shift 2
 		;;
+	--generate-only)
+		GENERATE_ONLY=true
+		shift
+		;;
+	--publish-only)
+		PUBLISH_ONLY=true
+		shift
+		;;
 	*)
 		echo "Unknown option: $1"
-		echo "Usage: $0 [-i|--interactive] [--brd-path PATH] [--existing-app-brd PATH] [--existing-app-arch PATH] [--workspace-root PATH] [--git-repo URL] [--context-dirs DIRS] [--policy-file FILE]"
+		echo "Usage: $0 [-i|--interactive] [--brd-path PATH] [--existing-app-brd PATH] [--existing-app-arch PATH] [--workspace-root PATH] [--git-repo URL] [--context-dirs DIRS] [--policy-file FILE] [--generate-only] [--publish-only]"
 		exit 1
 		;;
 	esac
@@ -138,6 +148,20 @@ if [ "$INTERACTIVE_MODE" = false ]; then
 	POLICY_FILE="${POLICY_FILE:-${ENV_POLICY_FILE:-$SCRIPT_DIR/policies/epic-stories-generation.policy.md}}"
 fi
 
+# Validate flag usage: --generate-only and --publish-only only work in non-interactive mode
+if [ "$INTERACTIVE_MODE" = true ]; then
+	if [ "$GENERATE_ONLY" = true ] || [ "$PUBLISH_ONLY" = true ]; then
+		echo "Error: --generate-only and --publish-only flags are only supported in non-interactive mode"
+		exit 1
+	fi
+fi
+
+# Validate that --generate-only and --publish-only are mutually exclusive
+if [ "$GENERATE_ONLY" = true ] && [ "$PUBLISH_ONLY" = true ]; then
+	echo "Error: --generate-only and --publish-only cannot be used together"
+	exit 1
+fi
+
 # Always store SDLC artifacts under the workspace root
 ARTIFACTS_DIR="$WORKSPACE_ROOT/sdlc-artifacts"
 EPIC_STORIES_DIR="$ARTIFACTS_DIR/epic-stories"
@@ -185,17 +209,33 @@ if [ -n "$GIT_REPO" ]; then
 	echo ""
 fi
 
-# Create output directory for epic & stories artifacts (start fresh each run)
-if [ -d "$EPIC_STORIES_DIR" ]; then
-	echo "Clearing existing epic & stories artifacts at: $EPIC_STORIES_DIR"
-	rm -rf "$EPIC_STORIES_DIR"
+# Create output directory for epic & stories artifacts
+# In publish-only mode, preserve existing artifacts; otherwise start fresh
+if [ "$PUBLISH_ONLY" = true ]; then
+	echo "Publish-only mode: Using existing artifacts at: $EPIC_STORIES_DIR"
+	if [ ! -d "$EPIC_STORIES_DIR" ]; then
+		echo "Error: Artifacts directory not found: $EPIC_STORIES_DIR"
+		echo "Run with --generate-only first to create artifacts"
+		exit 1
+	fi
+else
+	# Start fresh for generation
+	if [ -d "$EPIC_STORIES_DIR" ]; then
+		echo "Clearing existing epic & stories artifacts at: $EPIC_STORIES_DIR"
+		rm -rf "$EPIC_STORIES_DIR"
+	fi
+	mkdir -p "$EPIC_STORIES_DIR"
 fi
-mkdir -p "$EPIC_STORIES_DIR"
 
 echo "=========================================="
 echo "Agent 1: Epic & User Stories Generator"
 echo "=========================================="
 echo "Mode: $([ "$INTERACTIVE_MODE" = true ] && echo "Interactive" || echo "Non-Interactive")"
+if [ "$GENERATE_ONLY" = true ]; then
+	echo "Phase: Generate Only"
+elif [ "$PUBLISH_ONLY" = true ]; then
+	echo "Phase: Publish Only"
+fi
 echo "Git Repository: ${GIT_REPO:-Not provided}"
 echo "New Feature BRD Path: $BRD_PATH"
 echo "Existing App BRD Path: ${EXISTING_APP_BRD:-Not provided}"
@@ -206,33 +246,47 @@ echo "Artifacts Directory: $ARTIFACTS_DIR"
 echo "Policy File: $POLICY_FILE"
 echo ""
 
-# Load policy file
-if [ ! -f "$POLICY_FILE" ]; then
-	echo "Error: Policy file not found: $POLICY_FILE"
-	exit 1
-fi
+# Skip generation phase if in publish-only mode
+if [ "$PUBLISH_ONLY" = true ]; then
+	echo "Skipping generation phase (publish-only mode)"
+	echo "Using existing artifacts from: $EPIC_STORIES_DIR"
+	echo ""
 
-POLICY_CONTENT=$(cat "$POLICY_FILE")
+	# Validate that required artifacts exist
+	if [ ! -f "$EPIC_STORIES_DIR/epic.json" ] || [ ! -f "$EPIC_STORIES_DIR/stories.json" ]; then
+		echo "Error: Required artifacts not found in $EPIC_STORIES_DIR/"
+		echo "Expected files: epic.json, stories.json"
+		echo "Please run with --generate-only first to create artifacts"
+		exit 1
+	fi
+else
+	# Load policy file
+	if [ ! -f "$POLICY_FILE" ]; then
+		echo "Error: Policy file not found: $POLICY_FILE"
+		exit 1
+	fi
 
-# Build context discovery instruction
-CONTEXT_INSTRUCTION="$POLICY_CONTENT
+	POLICY_CONTENT=$(cat "$POLICY_FILE")
+
+	# Build context discovery instruction
+	CONTEXT_INSTRUCTION="$POLICY_CONTENT
 
 ---
 
 EXECUTION CONTEXT:
 - New Feature BRD Document Path: $BRD_PATH"
 
-if [ -n "$EXISTING_APP_BRD" ]; then
-	CONTEXT_INSTRUCTION="$CONTEXT_INSTRUCTION
+	if [ -n "$EXISTING_APP_BRD" ]; then
+		CONTEXT_INSTRUCTION="$CONTEXT_INSTRUCTION
 - Existing Application BRD Path: $EXISTING_APP_BRD"
-fi
+	fi
 
-if [ -n "$EXISTING_APP_ARCH" ]; then
-	CONTEXT_INSTRUCTION="$CONTEXT_INSTRUCTION
+	if [ -n "$EXISTING_APP_ARCH" ]; then
+		CONTEXT_INSTRUCTION="$CONTEXT_INSTRUCTION
 - Existing Application Architecture Path: $EXISTING_APP_ARCH"
-fi
+	fi
 
-CONTEXT_INSTRUCTION="$CONTEXT_INSTRUCTION
+	CONTEXT_INSTRUCTION="$CONTEXT_INSTRUCTION
 - Workspace Root: $WORKSPACE_ROOT
 - Context Directories: $CONTEXT_DIRS
 - Artifacts Directory: $EPIC_STORIES_DIR/
@@ -246,19 +300,20 @@ NOTE: Descriptions should be in Atlassian Document Format (ADF).
 
 Begin analysis and generation now."
 
-# Run Auggie agent
-echo "Running Auggie agent to generate Epic and User Stories..."
-echo ""
+	# Run Auggie agent
+	echo "Running Auggie agent to generate Epic and User Stories..."
+	echo ""
 
-auggie -p \
-	--workspace-root "$WORKSPACE_ROOT" \
-	"$CONTEXT_INSTRUCTION"
+	auggie -p \
+		--workspace-root "$WORKSPACE_ROOT" \
+		"$CONTEXT_INSTRUCTION"
 
-# Check if JSON files were generated
-if [ ! -f "$EPIC_STORIES_DIR/epic.json" ] || [ ! -f "$EPIC_STORIES_DIR/stories.json" ]; then
-	echo "Error: Expected JSON files not found."
-	echo "Please ensure epic.json and stories.json are created in $EPIC_STORIES_DIR/"
-	exit 1
+	# Check if JSON files were generated
+	if [ ! -f "$EPIC_STORIES_DIR/epic.json" ] || [ ! -f "$EPIC_STORIES_DIR/stories.json" ]; then
+		echo "Error: Expected JSON files not found."
+		echo "Please ensure epic.json and stories.json are created in $EPIC_STORIES_DIR/"
+		exit 1
+	fi
 fi
 
 echo ""
@@ -335,24 +390,45 @@ echo ""
 echo "Please review the generated epic and stories at: $EPIC_STORIES_DIR/"
 echo ""
 
-# Approval workflow
-APPROVED=false
-while [ "$APPROVED" = false ]; do
-	read -p "Approve and create in JIRA? (y/n): " approval
+# Exit early if in generate-only mode
+if [ "$GENERATE_ONLY" = true ]; then
+	echo "=========================================="
+	echo "Generate-only mode: Artifacts created successfully"
+	echo "=========================================="
+	echo "Artifacts saved to: $EPIC_STORIES_DIR/"
+	echo ""
+	echo "Next steps:"
+	echo "1. Review the generated artifacts"
+	echo "2. Run with --publish-only to create in JIRA"
+	echo ""
+	exit 0
+fi
 
-	case $approval in
-	y | Y | yes | Yes | YES)
-		APPROVED=true
-		;;
-	n | N | no | No | NO)
-		echo "Epic and stories not approved. Exiting."
-		exit 0
-		;;
-	*)
-		echo "Invalid input. Please enter 'y' or 'n'."
-		;;
-	esac
-done
+# Approval workflow
+# In non-interactive mode (without generate-only/publish-only), skip approval and proceed
+if [ "$INTERACTIVE_MODE" = false ]; then
+	echo "Non-interactive mode: Proceeding to JIRA creation automatically"
+	APPROVED=true
+else
+	# Interactive mode: ask for approval
+	APPROVED=false
+	while [ "$APPROVED" = false ]; do
+		read -p "Approve and create in JIRA? (y/n): " approval
+
+		case $approval in
+		y | Y | yes | Yes | YES)
+			APPROVED=true
+			;;
+		n | N | no | No | NO)
+			echo "Epic and stories not approved. Exiting."
+			exit 0
+			;;
+		*)
+			echo "Invalid input. Please enter 'y' or 'n'."
+			;;
+		esac
+	done
+fi
 
 echo ""
 echo "=========================================="
@@ -406,6 +482,7 @@ echo ""
 if [ -f "$EPIC_STORIES_DIR/stories.json" ]; then
 	CREATED_STORY_COUNT=0
 	STORY_COUNT=$(jq 'length' "$EPIC_STORIES_DIR/stories.json")
+	STORY_KEYS=()
 
 	echo "Creating $STORY_COUNT stories in JIRA..."
 	echo ""
@@ -423,6 +500,7 @@ if [ -f "$EPIC_STORIES_DIR/stories.json" ]; then
 
 		if [ -n "$STORY_KEY" ]; then
 			echo "Story created: $JIRA_BASE_URL/browse/$STORY_KEY"
+			STORY_KEYS+=("$STORY_KEY")
 			CREATED_STORY_COUNT=$((CREATED_STORY_COUNT + 1))
 		else
 			echo "WARNING: Failed to create story: $STORY_TITLE"
@@ -441,6 +519,26 @@ else
 	echo "Error: stories.json not found"
 	exit 1
 fi
+
+# Write JIRA artifacts to file for GitHub Actions workflow
+JIRA_ARTIFACTS_FILE="$EPIC_STORIES_DIR/jira-artifacts.json"
+echo "Writing JIRA artifacts to: $JIRA_ARTIFACTS_FILE"
+
+# Convert STORY_KEYS array to JSON array
+STORY_KEYS_JSON=$(printf '%s\n' "${STORY_KEYS[@]}" | jq -R . | jq -s .)
+
+cat >"$JIRA_ARTIFACTS_FILE" <<EOF
+{
+  "epic_key": "$EPIC_KEY",
+  "epic_url": "$JIRA_BASE_URL/browse/$EPIC_KEY",
+  "story_keys": $STORY_KEYS_JSON,
+  "story_count": ${#STORY_KEYS[@]},
+  "created_at": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+}
+EOF
+
+echo "JIRA artifacts saved successfully"
+echo ""
 
 # Save epic key for GitHub Actions
 if [ -n "$GITHUB_OUTPUT" ]; then

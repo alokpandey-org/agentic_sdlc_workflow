@@ -436,16 +436,25 @@ echo "  • Open the file in your editor to review"
 echo "  • Modify the plan if needed"
 echo "  • Approve to proceed with test code generation"
 echo ""
-read -p "Do you approve this test plan and want to proceed with Phase 2 (code generation)? (y/n): " APPROVAL
 
-if [ "$APPROVAL" != "y" ] && [ "$APPROVAL" != "Y" ]; then
+# Approval workflow between Phase 1 and Phase 2
+# In non-interactive mode, skip approval and proceed to Phase 2
+if [ "$INTERACTIVE_MODE" = false ]; then
+	echo "Non-interactive mode: Proceeding to Phase 2 (test code generation) automatically"
 	echo ""
-	echo "Unit test generation paused."
-	echo "You can review and modify the test plan at:"
-	echo "  $UNIT_TESTS_ARTIFACTS_DIR/unit-test-plan.md"
-	echo ""
-	echo "To resume, re-run this script with the same parameters."
-	exit 0
+else
+	# Interactive mode: ask for approval
+	read -p "Do you approve this test plan and want to proceed with Phase 2 (code generation)? (y/n): " APPROVAL
+
+	if [ "$APPROVAL" != "y" ] && [ "$APPROVAL" != "Y" ]; then
+		echo ""
+		echo "Unit test generation paused."
+		echo "You can review and modify the test plan at:"
+		echo "  $UNIT_TESTS_ARTIFACTS_DIR/unit-test-plan.md"
+		echo ""
+		echo "To resume, re-run this script with the same parameters."
+		exit 0
+	fi
 fi
 
 # Generate actual test code (PHASE 2)
