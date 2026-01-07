@@ -303,7 +303,6 @@ echo "Workspace Root: $WORKSPACE_ROOT"
 echo "Base Branch: $BASE_BRANCH"
 echo "Story Branch: $BRANCH_NAME"
 echo "JIRA Ticket ID: $JIRA_TICKET_ID"
-echo "Epic ID: $EPIC_ID"
 echo "Existing App BRD Path: $EXISTING_APP_BRD"
 echo "Existing App Architecture Path: $EXISTING_APP_ARCH"
 echo "New BRD Path: $NEW_BRD"
@@ -387,8 +386,8 @@ fi
 POLICY_CONTENT=$(cat "$POLICY_FILE")
 
 # Convert ADF to markdown for better readability in prompt
-EPIC_DESCRIPTION_MD=$(echo "$EPIC_DESCRIPTION_ADF" | adf2md 2>/dev/null || echo "$EPIC_DESCRIPTION_ADF")
-STORY_DESCRIPTION_MD=$(echo "$STORY_DESCRIPTION_ADF" | adf2md 2>/dev/null || echo "$STORY_DESCRIPTION_ADF")
+EPIC_DESCRIPTION_MD=$(echo "$EPIC_DESCRIPTION_ADF" | adf2md)
+STORY_DESCRIPTION_MD=$(echo "$STORY_DESCRIPTION_ADF" | adf2md)
 
 # Build implementation instruction similar to epic agent
 IMPLEMENTATION_INSTRUCTION="$POLICY_CONTENT

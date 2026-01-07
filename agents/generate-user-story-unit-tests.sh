@@ -216,6 +216,31 @@ if [ ! -f "$EXISTING_APP_ARCH" ]; then
 	exit 1
 fi
 
+# Save original workspace root for SDLC artifacts
+ORIGINAL_WORKSPACE_ROOT="$WORKSPACE_ROOT"
+
+# Clone Git repository if provided (always delete and re-clone for clean state)
+if [ -n "$GIT_REPO" ]; then
+	# Extract repo name from URL (last part without .git)
+	REPO_NAME=$(basename "$GIT_REPO" .git)
+	REPO_DIR="$WORKSPACE_ROOT/$REPO_NAME"
+
+	# Delete existing repo directory if it exists
+	if [ -d "$REPO_DIR" ]; then
+		echo "Deleting existing repository directory: $REPO_DIR"
+		rm -rf "$REPO_DIR"
+	fi
+
+	# Clone fresh copy
+	echo "Cloning repository from $GIT_REPO to $REPO_DIR..."
+	git clone "$GIT_REPO" "$REPO_DIR"
+	echo "Repository cloned successfully."
+	echo ""
+
+	# Update workspace root to the cloned repository for git operations
+	WORKSPACE_ROOT="$REPO_DIR"
+fi
+
 # Display configuration
 echo "=========================================="
 echo "Agent 3: Unit Test Generator"
@@ -227,7 +252,6 @@ elif [ "$PUBLISH_ONLY" = true ]; then
 	echo "Phase: Publish Only (Phase 2 - Test Code)"
 fi
 echo "JIRA Ticket ID: $JIRA_TICKET_ID"
-echo "Epic ID: $EPIC_ID"
 echo "Story Branch: $STORY_BRANCH"
 echo "Git Repository: ${GIT_REPO:-Not provided}"
 echo "Existing App BRD: $EXISTING_APP_BRD"
@@ -264,10 +288,9 @@ git pull origin "$STORY_BRANCH" || echo "Warning: Could not pull from remote"
 
 echo ""
 
-# Create artifacts directory structure
-ARTIFACTS_DIR="sdlc-artifacts"
+# Always store SDLC artifacts under the original workspace root (not inside cloned repo)
+ARTIFACTS_DIR="$ORIGINAL_WORKSPACE_ROOT/sdlc-artifacts"
 UNIT_TESTS_ARTIFACTS_DIR="$ARTIFACTS_DIR/unit-tests"
-mkdir -p "$UNIT_TESTS_ARTIFACTS_DIR"
 
 echo "Artifacts will be saved to: $UNIT_TESTS_ARTIFACTS_DIR"
 echo ""
@@ -342,8 +365,8 @@ fi
 POLICY_CONTENT=$(cat "$POLICY_FILE")
 
 # Convert ADF to markdown for better readability in prompt
-EPIC_DESCRIPTION_MD=$(echo "$EPIC_DESCRIPTION_ADF" | adf2md 2>/dev/null || echo "$EPIC_DESCRIPTION_ADF")
-STORY_DESCRIPTION_MD=$(echo "$STORY_DESCRIPTION_ADF" | adf2md 2>/dev/null || echo "$STORY_DESCRIPTION_ADF")
+EPIC_DESCRIPTION_MD=$(echo "$EPIC_DESCRIPTION_ADF" | adf2md)
+STORY_DESCRIPTION_MD=$(echo "$STORY_DESCRIPTION_ADF" | adf2md)
 
 # Build unit test plan generation instruction
 UNIT_TEST_PLAN_INSTRUCTION="$POLICY_CONTENT
@@ -491,45 +514,9 @@ if [ "$GENERATE_ONLY" = true ]; then
 	exit 0
 fi
 
-# Pause for manual approval (only if not in publish-only mode)
-if [ "$PUBLISH_ONLY" != true ]; then
-	echo ""
-	echo "=========================================="
-	echo "REVIEW REQUIRED - Unit Test Plan Generated"
-	echo "=========================================="
-	echo ""
-	echo "📄 Test Plan Location:"
-	echo "   $UNIT_TESTS_ARTIFACTS_DIR/unit-test-plan.md"
-	echo ""
-	echo "Please review the test plan to verify:"
-	echo "  ✓ Applicability assessment is correct"
-	echo "  ✓ Test scenarios cover all requirements"
-	echo "  ✓ Mocking strategy is appropriate"
-	echo "  ✓ Test files and structure follow conventions"
-	echo ""
-	echo "You can:"
-	echo "  • Open the file in your editor to review"
-	echo "  • Modify the plan if needed"
-	echo "  • Approve to proceed with test code generation"
-	echo ""
-
-	# Approval workflow between Phase 1 and Phase 2
-	# Interactive mode only (non-interactive without flags would have exited in generate-only above)
-	if [ "$INTERACTIVE_MODE" = true ]; then
-		# Interactive mode: ask for approval
-		read -p "Do you approve this test plan and want to proceed with Phase 2 (code generation)? (y/n): " APPROVAL
-
-		if [ "$APPROVAL" != "y" ] && [ "$APPROVAL" != "Y" ]; then
-			echo ""
-			echo "Unit test generation paused."
-			echo "You can review and modify the test plan at:"
-			echo "  $UNIT_TESTS_ARTIFACTS_DIR/unit-test-plan.md"
-			echo ""
-			echo "To resume, re-run this script with the same parameters."
-			exit 0
-		fi
-	fi
-fi
+# Proceed to Phase 2 automatically (no approval required)
+echo ""
+echo "Proceeding to Phase 2 (test code generation) automatically"
 
 # Generate actual test code (PHASE 2)
 echo ""
