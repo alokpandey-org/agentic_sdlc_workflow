@@ -459,32 +459,6 @@ echo ""
 echo "Please review the generated implementation at: $IMPLEMENTATION_ARTIFACTS_DIR/"
 echo ""
 
-# Approval workflow
-# In non-interactive mode, skip approval and proceed to PR creation
-if [ "$INTERACTIVE_MODE" = false ]; then
-	echo "Non-interactive mode: Proceeding to PR creation automatically"
-	APPROVED=true
-else
-	# Interactive mode: ask for approval
-	APPROVED=false
-	while [ "$APPROVED" = false ]; do
-		read -p "Approve and create Pull Request in GitHub? (y/n): " approval
-
-		case $approval in
-		y | Y | yes | Yes | YES)
-			APPROVED=true
-			;;
-		n | N | no | No | NO)
-			echo "Implementation not approved. Exiting."
-			exit 0
-			;;
-		*)
-			echo "Invalid input. Please enter 'y' or 'n'."
-			;;
-		esac
-	done
-fi
-
 echo ""
 echo "=========================================="
 echo "Creating Pull Request in GitHub"

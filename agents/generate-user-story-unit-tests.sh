@@ -29,6 +29,8 @@ GIT_REPO="${DEMO_GIT_REPO:-}"
 CONTEXT_DIRS=""
 INTERACTIVE_MODE=false
 POLICY_FILE="$SCRIPT_DIR/policies/unit-tests.policy.md"
+GENERATE_ONLY=false
+PUBLISH_ONLY=false
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -69,9 +71,17 @@ while [[ $# -gt 0 ]]; do
 		POLICY_FILE="$2"
 		shift 2
 		;;
+	--generate-only)
+		GENERATE_ONLY=true
+		shift
+		;;
+	--publish-only)
+		PUBLISH_ONLY=true
+		shift
+		;;
 	*)
 		echo "Unknown option: $1"
-		echo "Usage: $0 [-i|--interactive] [--workspace-root PATH] [--jira-ticket-id ID] [--story-branch BRANCH] [--existing-app-brd PATH] [--existing-app-arch PATH] [--git-repo URL] [--context-dirs DIRS] [--policy-file FILE]"
+		echo "Usage: $0 [-i|--interactive] [--workspace-root PATH] [--jira-ticket-id ID] [--story-branch BRANCH] [--existing-app-brd PATH] [--existing-app-arch PATH] [--git-repo URL] [--context-dirs DIRS] [--policy-file FILE] [--generate-only] [--publish-only]"
 		exit 1
 		;;
 	esac
@@ -150,6 +160,20 @@ if [ "$INTERACTIVE_MODE" = false ]; then
 	POLICY_FILE="${POLICY_FILE:-${ENV_POLICY_FILE:-$SCRIPT_DIR/policies/unit-tests.policy.md}}"
 fi
 
+# Validate flag usage: --generate-only and --publish-only only work in non-interactive mode
+if [ "$INTERACTIVE_MODE" = true ]; then
+	if [ "$GENERATE_ONLY" = true ] || [ "$PUBLISH_ONLY" = true ]; then
+		echo "Error: --generate-only and --publish-only flags are only supported in non-interactive mode"
+		exit 1
+	fi
+fi
+
+# Validate that --generate-only and --publish-only are mutually exclusive
+if [ "$GENERATE_ONLY" = true ] && [ "$PUBLISH_ONLY" = true ]; then
+	echo "Error: --generate-only and --publish-only cannot be used together"
+	exit 1
+fi
+
 # Validate required parameters
 if [ -z "$WORKSPACE_ROOT" ]; then
 	echo "Error: Workspace root is required"
@@ -196,6 +220,12 @@ fi
 echo "=========================================="
 echo "Agent 3: Unit Test Generator"
 echo "=========================================="
+echo "Mode: $([ "$INTERACTIVE_MODE" = true ] && echo "Interactive" || echo "Non-Interactive")"
+if [ "$GENERATE_ONLY" = true ]; then
+	echo "Phase: Generate Only (Phase 1 - Test Plan)"
+elif [ "$PUBLISH_ONLY" = true ]; then
+	echo "Phase: Publish Only (Phase 2 - Test Code)"
+fi
 echo "JIRA Ticket ID: $JIRA_TICKET_ID"
 echo "Epic ID: $EPIC_ID"
 echo "Story Branch: $STORY_BRANCH"
@@ -352,108 +382,152 @@ unit-test-plan.md - A test plan which briefly describes the tests to be written 
 Begin unit test plan generation now."
 
 # Clean up existing artifacts to start with a clean slate
+# In publish-only mode, preserve existing artifacts; otherwise start fresh
 echo ""
 echo "=========================================="
-echo "Cleaning Up Existing Artifacts"
+if [ "$PUBLISH_ONLY" = true ]; then
+	echo "Publish-Only Mode: Using Existing Artifacts"
+else
+	echo "Cleaning Up Existing Artifacts"
+fi
 echo "=========================================="
 
-if [ -d "$UNIT_TESTS_ARTIFACTS_DIR" ]; then
-	echo "Found existing artifacts directory: $UNIT_TESTS_ARTIFACTS_DIR"
-	echo "Removing old artifacts to start fresh..."
+if [ "$PUBLISH_ONLY" = true ]; then
+	echo "Publish-only mode: Using existing test plan at: $UNIT_TESTS_ARTIFACTS_DIR"
+	if [ ! -d "$UNIT_TESTS_ARTIFACTS_DIR" ]; then
+		echo "Error: Artifacts directory not found: $UNIT_TESTS_ARTIFACTS_DIR"
+		echo "Run with --generate-only first to create test plan"
+		exit 1
+	fi
+	if [ ! -f "$UNIT_TESTS_ARTIFACTS_DIR/unit-test-plan.md" ]; then
+		echo "Error: Test plan not found: $UNIT_TESTS_ARTIFACTS_DIR/unit-test-plan.md"
+		echo "Run with --generate-only first to create test plan"
+		exit 1
+	fi
+	echo "✓ Found existing test plan"
+else
+	# Start fresh for generation
+	if [ -d "$UNIT_TESTS_ARTIFACTS_DIR" ]; then
+		echo "Found existing artifacts directory: $UNIT_TESTS_ARTIFACTS_DIR"
+		echo "Removing old artifacts to start fresh..."
 
-	# Show what will be deleted
-	if [ "$(ls -A "$UNIT_TESTS_ARTIFACTS_DIR" 2>/dev/null)" ]; then
-		echo ""
-		echo "Files to be removed:"
-		ls -la "$UNIT_TESTS_ARTIFACTS_DIR"
-		echo ""
+		# Show what will be deleted
+		if [ "$(ls -A "$UNIT_TESTS_ARTIFACTS_DIR" 2>/dev/null)" ]; then
+			echo ""
+			echo "Files to be removed:"
+			ls -la "$UNIT_TESTS_ARTIFACTS_DIR"
+			echo ""
+		fi
+
+		# Remove the directory
+		rm -rf "$UNIT_TESTS_ARTIFACTS_DIR"
+		echo "✓ Old artifacts removed"
+	else
+		echo "No existing artifacts found - starting fresh"
 	fi
 
-	# Remove the directory
-	rm -rf "$UNIT_TESTS_ARTIFACTS_DIR"
-	echo "✓ Old artifacts removed"
-else
-	echo "No existing artifacts found - starting fresh"
+	# Create fresh artifacts directory
+	mkdir -p "$UNIT_TESTS_ARTIFACTS_DIR"
+	echo "✓ Created clean artifacts directory: $UNIT_TESTS_ARTIFACTS_DIR"
 fi
-
-# Create fresh artifacts directory
-mkdir -p "$UNIT_TESTS_ARTIFACTS_DIR"
-echo "✓ Created clean artifacts directory: $UNIT_TESTS_ARTIFACTS_DIR"
 echo ""
 
-# Run Auggie agent to generate test plans (PHASE 1)
-echo "=========================================="
-echo "PHASE 1: Generating Unit Test Plan"
-echo "=========================================="
-echo "Running Auggie agent to analyze implementation and create test plan..."
-echo ""
-
-auggie -p \
-	--workspace-root "$WORKSPACE_ROOT" \
-	"$UNIT_TEST_PLAN_INSTRUCTION"
-
-# Check if test plans were generated
-if [ ! -f "$UNIT_TESTS_ARTIFACTS_DIR/unit-test-plan.md" ]; then
-	echo "Error: unit-test-plan.md not found"
-	echo "Expected location: $UNIT_TESTS_ARTIFACTS_DIR/unit-test-plan.md"
-	exit 1
-fi
-
-echo ""
-echo "=========================================="
-echo "Unit Test Plan Generated!"
-echo "=========================================="
-echo "Location: $UNIT_TESTS_ARTIFACTS_DIR/"
-echo ""
-echo "Generated files:"
-ls -la "$UNIT_TESTS_ARTIFACTS_DIR/"
-echo "=========================================="
-
-# Display test plan
-echo ""
-echo "UNIT TEST PLAN:"
-echo "=========================================="
-cat "$UNIT_TESTS_ARTIFACTS_DIR/unit-test-plan.md"
-echo "=========================================="
-
-# Pause for manual approval
-echo ""
-echo "=========================================="
-echo "REVIEW REQUIRED - Unit Test Plan Generated"
-echo "=========================================="
-echo ""
-echo "📄 Test Plan Location:"
-echo "   $UNIT_TESTS_ARTIFACTS_DIR/unit-test-plan.md"
-echo ""
-echo "Please review the test plan to verify:"
-echo "  ✓ Applicability assessment is correct"
-echo "  ✓ Test scenarios cover all requirements"
-echo "  ✓ Mocking strategy is appropriate"
-echo "  ✓ Test files and structure follow conventions"
-echo ""
-echo "You can:"
-echo "  • Open the file in your editor to review"
-echo "  • Modify the plan if needed"
-echo "  • Approve to proceed with test code generation"
-echo ""
-
-# Approval workflow between Phase 1 and Phase 2
-# In non-interactive mode, skip approval and proceed to Phase 2
-if [ "$INTERACTIVE_MODE" = false ]; then
-	echo "Non-interactive mode: Proceeding to Phase 2 (test code generation) automatically"
+# Skip Phase 1 if in publish-only mode
+if [ "$PUBLISH_ONLY" = true ]; then
+	echo "=========================================="
+	echo "Skipping Phase 1 (publish-only mode)"
+	echo "=========================================="
+	echo "Using existing test plan from: $UNIT_TESTS_ARTIFACTS_DIR/unit-test-plan.md"
 	echo ""
 else
-	# Interactive mode: ask for approval
-	read -p "Do you approve this test plan and want to proceed with Phase 2 (code generation)? (y/n): " APPROVAL
+	# Run Auggie agent to generate test plans (PHASE 1)
+	echo "=========================================="
+	echo "PHASE 1: Generating Unit Test Plan"
+	echo "=========================================="
+	echo "Running Auggie agent to analyze implementation and create test plan..."
+	echo ""
 
-	if [ "$APPROVAL" != "y" ] && [ "$APPROVAL" != "Y" ]; then
-		echo ""
-		echo "Unit test generation paused."
-		echo "You can review and modify the test plan at:"
-		echo "  $UNIT_TESTS_ARTIFACTS_DIR/unit-test-plan.md"
-		echo ""
-		echo "To resume, re-run this script with the same parameters."
-		exit 0
+	auggie -p \
+		--workspace-root "$WORKSPACE_ROOT" \
+		"$UNIT_TEST_PLAN_INSTRUCTION"
+
+	# Check if test plans were generated
+	if [ ! -f "$UNIT_TESTS_ARTIFACTS_DIR/unit-test-plan.md" ]; then
+		echo "Error: unit-test-plan.md not found"
+		echo "Expected location: $UNIT_TESTS_ARTIFACTS_DIR/unit-test-plan.md"
+		exit 1
+	fi
+
+	echo ""
+	echo "=========================================="
+	echo "Unit Test Plan Generated!"
+	echo "=========================================="
+	echo "Location: $UNIT_TESTS_ARTIFACTS_DIR/"
+	echo ""
+	echo "Generated files:"
+	ls -la "$UNIT_TESTS_ARTIFACTS_DIR/"
+	echo "=========================================="
+
+	# Display test plan
+	echo ""
+	echo "UNIT TEST PLAN:"
+	echo "=========================================="
+	cat "$UNIT_TESTS_ARTIFACTS_DIR/unit-test-plan.md"
+	echo "=========================================="
+fi
+
+# Exit early if in generate-only mode
+if [ "$GENERATE_ONLY" = true ]; then
+	echo ""
+	echo "=========================================="
+	echo "Generate-only mode: Test plan created successfully"
+	echo "=========================================="
+	echo "Test plan saved to: $UNIT_TESTS_ARTIFACTS_DIR/unit-test-plan.md"
+	echo ""
+	echo "Next steps:"
+	echo "1. Review the generated test plan"
+	echo "2. Run with --publish-only to generate test code"
+	echo ""
+	exit 0
+fi
+
+# Pause for manual approval (only if not in publish-only mode)
+if [ "$PUBLISH_ONLY" != true ]; then
+	echo ""
+	echo "=========================================="
+	echo "REVIEW REQUIRED - Unit Test Plan Generated"
+	echo "=========================================="
+	echo ""
+	echo "📄 Test Plan Location:"
+	echo "   $UNIT_TESTS_ARTIFACTS_DIR/unit-test-plan.md"
+	echo ""
+	echo "Please review the test plan to verify:"
+	echo "  ✓ Applicability assessment is correct"
+	echo "  ✓ Test scenarios cover all requirements"
+	echo "  ✓ Mocking strategy is appropriate"
+	echo "  ✓ Test files and structure follow conventions"
+	echo ""
+	echo "You can:"
+	echo "  • Open the file in your editor to review"
+	echo "  • Modify the plan if needed"
+	echo "  • Approve to proceed with test code generation"
+	echo ""
+
+	# Approval workflow between Phase 1 and Phase 2
+	# Interactive mode only (non-interactive without flags would have exited in generate-only above)
+	if [ "$INTERACTIVE_MODE" = true ]; then
+		# Interactive mode: ask for approval
+		read -p "Do you approve this test plan and want to proceed with Phase 2 (code generation)? (y/n): " APPROVAL
+
+		if [ "$APPROVAL" != "y" ] && [ "$APPROVAL" != "Y" ]; then
+			echo ""
+			echo "Unit test generation paused."
+			echo "You can review and modify the test plan at:"
+			echo "  $UNIT_TESTS_ARTIFACTS_DIR/unit-test-plan.md"
+			echo ""
+			echo "To resume, re-run this script with the same parameters."
+			exit 0
+		fi
 	fi
 fi
 

@@ -404,31 +404,8 @@ if [ "$GENERATE_ONLY" = true ]; then
 	exit 0
 fi
 
-# Approval workflow
-# In non-interactive mode (without generate-only/publish-only), skip approval and proceed
-if [ "$INTERACTIVE_MODE" = false ]; then
-	echo "Non-interactive mode: Proceeding to JIRA creation automatically"
-	APPROVED=true
-else
-	# Interactive mode: ask for approval
-	APPROVED=false
-	while [ "$APPROVED" = false ]; do
-		read -p "Approve and create in JIRA? (y/n): " approval
-
-		case $approval in
-		y | Y | yes | Yes | YES)
-			APPROVED=true
-			;;
-		n | N | no | No | NO)
-			echo "Epic and stories not approved. Exiting."
-			exit 0
-			;;
-		*)
-			echo "Invalid input. Please enter 'y' or 'n'."
-			;;
-		esac
-	done
-fi
+# Proceed to JIRA creation automatically (no approval required)
+echo "Proceeding to JIRA creation automatically"
 
 echo ""
 echo "=========================================="
