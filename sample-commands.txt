@@ -1,0 +1,47 @@
+./generate-epic-and-user-stories.sh \
+  --brd-path /home/azureuser/business-req-docs/new-features/stock-location-notes.md \
+  --existing-app-brd /home/azureuser/business-req-docs/current-brd-with-tech-arch.md \
+  --existing-app-arch /home/azureuser/business-req-docs/current-brd-with-tech-arch.md \
+  --workspace-root /home/azureuser/agentic-sdlc-workspace \
+  --git-repo https://github.com/alokpandey/Inventory-system.git \
+  --policy-file /home/azureuser/agentic-sdlc-workflow/agents/policies/epic-stories-generation.policy.md \
+  --generate-only
+
+./generate-epic-and-user-stories.sh \
+  --brd-path /home/azureuser/business-req-docs/new-features/stock-location-notes.md \
+  --existing-app-brd /home/azureuser/business-req-docs/current-brd-with-tech-arch.md \
+  --existing-app-arch /home/azureuser/business-req-docs/current-brd-with-tech-arch.md \
+  --workspace-root /home/azureuser/agentic-sdlc-workspace \
+  --git-repo https://github.com/alokpandey/Inventory-system.git \
+  --policy-file /home/azureuser/agentic-sdlc-workflow/agents/policies/epic-stories-generation.policy.md \
+  --publish-only
+
+./generate-user-story-implementation.sh \
+  --workspace-root /home/azureuser/agentic-sdlc-workspace \
+  --jira-ticket-id {{ jira id here }} \
+  --existing-app-brd /home/azureuser/business-req-docs/current-brd-with-tech-arch.md \
+  --existing-app-arch /home/azureuser/business-req-docs/current-brd-with-tech-arch.md \
+  --new-brd /home/azureuser/business-req-docs/new-features/stock-location-notes.md \
+  --git-repo https://github.com/alokpandey/Inventory-system.git \
+  --base-branch main \
+  --policy-file /home/azureuser/agentic-sdlc-workflow/agents/policies/implementation.policy.md
+
+./generate-user-story-unit-tests.sh \
+  --workspace-root /home/azureuser/agentic-sdlc-workspace \
+  --jira-ticket-id {{ jira id here }} \
+  --story-branch story/{{ jira id here }} \
+  --existing-app-brd /home/azureuser/business-req-docs/current-brd-with-tech-arch.md \
+  --existing-app-arch /home/azureuser/business-req-docs/current-brd-with-tech-arch.md \
+  --git-repo https://github.com/alokpandey/Inventory-system.git \
+  --policy-file /home/azureuser/agentic-sdlc-workflow/agents/policies/unit-tests.policy.md \
+  --generate-only
+
+./generate-user-story-unit-tests.sh \
+  --workspace-root /home/azureuser/agentic-sdlc-workspace \
+  --jira-ticket-id {{ jira id here }} \
+  --story-branch story/{{ jira id here }} \
+  --existing-app-brd /home/azureuser/business-req-docs/current-brd-with-tech-arch.md \
+  --existing-app-arch /home/azureuser/business-req-docs/current-brd-with-tech-arch.md \
+  --git-repo https://github.com/alokpandey/Inventory-system.git \
+  --policy-file /home/azureuser/agentic-sdlc-workflow/agents/policies/unit-tests.policy.md \
+  --publish-only

@@ -24,7 +24,6 @@ EXISTING_APP_BRD="${DEMO_EXISTING_APP_BRD:-}"
 EXISTING_APP_ARCH="${DEMO_EXISTING_APP_ARCH:-}"
 WORKSPACE_ROOT="${DEMO_WORKSPACE_ROOT:-.}"
 GIT_REPO="${DEMO_GIT_REPO:-}"
-CONTEXT_DIRS=""
 ARTIFACTS_DIR="sdlc-artifacts"
 INTERACTIVE_MODE=false
 POLICY_FILE="$SCRIPT_DIR/policies/epic-stories-generation.policy.md"
@@ -58,10 +57,6 @@ while [[ $# -gt 0 ]]; do
 		GIT_REPO="$2"
 		shift 2
 		;;
-	--context-dirs)
-		CONTEXT_DIRS="$2"
-		shift 2
-		;;
 	--policy-file)
 		POLICY_FILE="$2"
 		shift 2
@@ -76,7 +71,7 @@ while [[ $# -gt 0 ]]; do
 		;;
 	*)
 		echo "Unknown option: $1"
-		echo "Usage: $0 [-i|--interactive] [--brd-path PATH] [--existing-app-brd PATH] [--existing-app-arch PATH] [--workspace-root PATH] [--git-repo URL] [--context-dirs DIRS] [--policy-file FILE] [--generate-only] [--publish-only]"
+		echo "Usage: $0 [-i|--interactive] [--brd-path PATH] [--existing-app-brd PATH] [--existing-app-arch PATH] [--workspace-root PATH] [--git-repo URL] [--policy-file FILE] [--generate-only] [--publish-only]"
 		exit 1
 		;;
 	esac
@@ -127,10 +122,6 @@ if [ "$INTERACTIVE_MODE" = true ]; then
 		read -p "Enter new feature BRD document path: " BRD_PATH
 	fi
 
-	# Prompt for context directories
-	read -p "Enter context directories (comma-separated) [default: src,docs]: " input
-	CONTEXT_DIRS="${input:-src,docs}"
-
 	# Prompt for policy file
 	read -p "Enter policy file path [default: $POLICY_FILE]: " input
 	POLICY_FILE="${input:-$POLICY_FILE}"
@@ -144,7 +135,6 @@ if [ "$INTERACTIVE_MODE" = false ]; then
 	EXISTING_APP_BRD="${EXISTING_APP_BRD:-${ENV_EXISTING_APP_BRD}}"
 	EXISTING_APP_ARCH="${EXISTING_APP_ARCH:-${ENV_EXISTING_APP_ARCH}}"
 	WORKSPACE_ROOT="${WORKSPACE_ROOT:-${ENV_WORKSPACE_ROOT:-.}}"
-	CONTEXT_DIRS="${CONTEXT_DIRS:-${ENV_CONTEXT_DIRS:-src,docs}}"
 	POLICY_FILE="${POLICY_FILE:-${ENV_POLICY_FILE:-$SCRIPT_DIR/policies/epic-stories-generation.policy.md}}"
 fi
 
@@ -241,7 +231,6 @@ echo "New Feature BRD Path: $BRD_PATH"
 echo "Existing App BRD Path: ${EXISTING_APP_BRD:-Not provided}"
 echo "Existing App Architecture Path: ${EXISTING_APP_ARCH:-Not provided}"
 echo "Workspace Root: $WORKSPACE_ROOT"
-echo "Context Directories: $CONTEXT_DIRS"
 echo "Artifacts Directory: $ARTIFACTS_DIR"
 echo "Policy File: $POLICY_FILE"
 echo ""
@@ -288,7 +277,6 @@ EXECUTION CONTEXT:
 
 	CONTEXT_INSTRUCTION="$CONTEXT_INSTRUCTION
 - Workspace Root: $WORKSPACE_ROOT
-- Context Directories: $CONTEXT_DIRS
 - Artifacts Directory: $EPIC_STORIES_DIR/
 
 IMPORTANT: Create the following files in JSON format:

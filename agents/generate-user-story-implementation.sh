@@ -26,7 +26,6 @@ EXISTING_APP_ARCH="${DEMO_EXISTING_APP_ARCH:-}"
 NEW_BRD=""
 GIT_REPO="${DEMO_GIT_REPO:-}"
 BASE_BRANCH="main"
-CONTEXT_DIRS=""
 INTERACTIVE_MODE=false
 POLICY_FILE="$SCRIPT_DIR/policies/implementation.policy.md"
 
@@ -65,17 +64,13 @@ while [[ $# -gt 0 ]]; do
 		BASE_BRANCH="$2"
 		shift 2
 		;;
-	--context-dirs)
-		CONTEXT_DIRS="$2"
-		shift 2
-		;;
 	--policy-file)
 		POLICY_FILE="$2"
 		shift 2
 		;;
 	*)
 		echo "Unknown option: $1"
-		echo "Usage: $0 [-i|--interactive] [--workspace-root PATH] [--jira-ticket-id ID] [--existing-app-brd PATH] [--existing-app-arch PATH] [--new-brd PATH] [--git-repo URL] [--base-branch BRANCH] [--context-dirs DIRS] [--policy-file FILE]"
+		echo "Usage: $0 [-i|--interactive] [--workspace-root PATH] [--jira-ticket-id ID] [--existing-app-brd PATH] [--existing-app-arch PATH] [--new-brd PATH] [--git-repo URL] [--base-branch BRANCH] [--policy-file FILE]"
 		exit 1
 		;;
 	esac
@@ -135,10 +130,6 @@ if [ "$INTERACTIVE_MODE" = true ]; then
 	read -p "Enter base branch name [default: main]: " input
 	BASE_BRANCH="${input:-main}"
 
-	# Prompt for context directories
-	read -p "Enter context directories (comma-separated) [default: src,docs]: " input
-	CONTEXT_DIRS="${input:-src,docs}"
-
 	# Prompt for policy file
 	read -p "Enter policy file path [default: $POLICY_FILE]: " input
 	POLICY_FILE="${input:-$POLICY_FILE}"
@@ -155,7 +146,6 @@ if [ "$INTERACTIVE_MODE" = false ]; then
 	NEW_BRD="${NEW_BRD:-${ENV_NEW_BRD}}"
 	GIT_REPO="${GIT_REPO:-${ENV_GIT_REPO}}"
 	BASE_BRANCH="${BASE_BRANCH:-${ENV_BASE_BRANCH:-main}}"
-	CONTEXT_DIRS="${CONTEXT_DIRS:-${ENV_CONTEXT_DIRS:-src,docs}}"
 	POLICY_FILE="${POLICY_FILE:-${ENV_POLICY_FILE:-$SCRIPT_DIR/policies/implementation.policy.md}}"
 fi
 
@@ -306,7 +296,6 @@ echo "JIRA Ticket ID: $JIRA_TICKET_ID"
 echo "Existing App BRD Path: $EXISTING_APP_BRD"
 echo "Existing App Architecture Path: $EXISTING_APP_ARCH"
 echo "New BRD Path: $NEW_BRD"
-echo "Context Directories: $CONTEXT_DIRS"
 echo "Artifacts Directory: $ARTIFACTS_DIR"
 echo "Policy File: $POLICY_FILE"
 echo ""
@@ -416,7 +405,6 @@ DOCUMENTS:
 
 WORKSPACE:
 - Workspace Root: $WORKSPACE_ROOT
-- Context Directories: $CONTEXT_DIRS
 - Artifacts Directory: $IMPLEMENTATION_ARTIFACTS_DIR/
 - Base Branch: $BASE_BRANCH (branch to merge into)
 - Story Branch: $BRANCH_NAME (current working branch)

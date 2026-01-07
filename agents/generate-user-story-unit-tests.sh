@@ -26,7 +26,6 @@ STORY_BRANCH=""
 EXISTING_APP_BRD="${DEMO_EXISTING_APP_BRD:-}"
 EXISTING_APP_ARCH="${DEMO_EXISTING_APP_ARCH:-}"
 GIT_REPO="${DEMO_GIT_REPO:-}"
-CONTEXT_DIRS=""
 INTERACTIVE_MODE=false
 POLICY_FILE="$SCRIPT_DIR/policies/unit-tests.policy.md"
 GENERATE_ONLY=false
@@ -63,10 +62,6 @@ while [[ $# -gt 0 ]]; do
 		GIT_REPO="$2"
 		shift 2
 		;;
-	--context-dirs)
-		CONTEXT_DIRS="$2"
-		shift 2
-		;;
 	--policy-file)
 		POLICY_FILE="$2"
 		shift 2
@@ -81,7 +76,7 @@ while [[ $# -gt 0 ]]; do
 		;;
 	*)
 		echo "Unknown option: $1"
-		echo "Usage: $0 [-i|--interactive] [--workspace-root PATH] [--jira-ticket-id ID] [--story-branch BRANCH] [--existing-app-brd PATH] [--existing-app-arch PATH] [--git-repo URL] [--context-dirs DIRS] [--policy-file FILE] [--generate-only] [--publish-only]"
+		echo "Usage: $0 [-i|--interactive] [--workspace-root PATH] [--jira-ticket-id ID] [--story-branch BRANCH] [--existing-app-brd PATH] [--existing-app-arch PATH] [--git-repo URL] [--policy-file FILE] [--generate-only] [--publish-only]"
 		exit 1
 		;;
 	esac
@@ -137,10 +132,6 @@ if [ "$INTERACTIVE_MODE" = true ]; then
 		read -p "Enter existing application architecture documentation path: " EXISTING_APP_ARCH
 	fi
 
-	# Prompt for context directories
-	read -p "Enter context directories (comma-separated) [default: src,docs]: " input
-	CONTEXT_DIRS="${input:-src,docs}"
-
 	# Prompt for policy file
 	read -p "Enter policy file path [default: $POLICY_FILE]: " input
 	POLICY_FILE="${input:-$POLICY_FILE}"
@@ -156,7 +147,6 @@ if [ "$INTERACTIVE_MODE" = false ]; then
 	EXISTING_APP_BRD="${EXISTING_APP_BRD:-${ENV_EXISTING_APP_BRD}}"
 	EXISTING_APP_ARCH="${EXISTING_APP_ARCH:-${ENV_EXISTING_APP_ARCH}}"
 	GIT_REPO="${GIT_REPO:-${ENV_GIT_REPO}}"
-	CONTEXT_DIRS="${CONTEXT_DIRS:-${ENV_CONTEXT_DIRS:-src,docs}}"
 	POLICY_FILE="${POLICY_FILE:-${ENV_POLICY_FILE:-$SCRIPT_DIR/policies/unit-tests.policy.md}}"
 fi
 
@@ -257,7 +247,6 @@ echo "Git Repository: ${GIT_REPO:-Not provided}"
 echo "Existing App BRD: $EXISTING_APP_BRD"
 echo "Existing App Architecture: $EXISTING_APP_ARCH"
 echo "Workspace Root: $WORKSPACE_ROOT"
-echo "Context Directories: $CONTEXT_DIRS"
 echo "Policy File: $POLICY_FILE"
 echo ""
 echo "NOTE: This agent assumes story implementation"
@@ -393,7 +382,6 @@ IMPLEMENTATION:
 - Existing Application BRD: $EXISTING_APP_BRD
 - Existing Application Architecture: $EXISTING_APP_ARCH
 - Workspace Root: $WORKSPACE_ROOT
-- Context Directories: $CONTEXT_DIRS
 - Output Directory: $UNIT_TESTS_ARTIFACTS_DIR/
 
 Create the following markdown files in $UNIT_TESTS_ARTIFACTS_DIR/:
