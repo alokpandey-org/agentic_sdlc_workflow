@@ -1,0 +1,136 @@
+name: Agentic SDLC Workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      git_repo:
+        description: 'Target Git Repository URL'
+        required: true
+        type: string
+        default: 'https://github.com/alokpandey/Inventory-system.git'
+      new_brd_path:
+        description: 'Path to new BRD file on runner'
+        required: true
+        type: string
+        default: '/home/azureuser/business-req-docs/new-features/stock-location-notes.md'
+      existing_brd_path:
+        description: 'Path to existing BRD file on runner'
+        required: true
+        type: string
+        default: '/home/azureuser/business-req-docs/current-brd-with-tech-arch.md'
+      existing_tech_arch_path:
+        description: 'Path to existing tech architecture file on runner'
+        required: true
+        type: string
+        default: '/home/azureuser/business-req-docs/current-brd-with-tech-arch.md'
+
+env:
+  WORKSPACE_ROOT: /home/azureuser/agentic-sdlc-workspace
+  SCRIPTS_DIR: /home/azureuser/agentic-sdlc-workflow/agents
+  POLICY_DIR: /home/azureuser/agentic-sdlc-workflow/agents/policies
+
+jobs:
+  cleanup:
+    name: Cleanup Workspace
+    runs-on: self-hosted
+    steps:
+      - name: Clean workspace directory
+        run: |
+          echo "Cleaning workspace: ${{ env.WORKSPACE_ROOT }}"
+          rm -rf ${{ env.WORKSPACE_ROOT }}/*
+          mkdir -p ${{ env.WORKSPACE_ROOT }}
+          echo "Workspace cleaned successfully"
+
+  generate-epic:
+    name: Generate Epic and Stories
+    runs-on: self-hosted
+    needs: cleanup
+    steps:
+      - name: Generate epic and stories (generate-only)
+        run: |
+          cd ${{ env.SCRIPTS_DIR }}
+          ./generate-epic-and-user-stories.sh \
+            --brd-path "${{ inputs.new_brd_path }}" \
+            --existing-app-brd "${{ inputs.existing_brd_path }}" \
+            --existing-app-arch "${{ inputs.existing_tech_arch_path }}" \
+            --workspace-root "${{ env.WORKSPACE_ROOT }}" \
+            --git-repo "${{ inputs.git_repo }}" \
+            --policy-file "${{ env.POLICY_DIR }}/epic-stories-generation.policy.md" \
+            --generate-only
+
+      - name: Display generated artifacts location
+        run: |
+          echo "Epic and stories generated at: ${{ env.WORKSPACE_ROOT }}/sdlc-artifacts/epic-stories/"
+          echo "Please review the generated markdown files before approval"
+
+  review-epic:
+    name: Review Epic and Stories
+    runs-on: self-hosted
+    needs: generate-epic
+    environment: epic-review
+    steps:
+      - name: Epic review checkpoint
+        run: |
+          echo "Epic and stories have been reviewed and approved"
+          echo "Proceeding to publish to JIRA"
+
+  publish-epic:
+    name: Publish Epic and Stories to JIRA
+    runs-on: self-hosted
+    needs: review-epic
+    outputs:
+      story_matrix: ${{ steps.get-stories.outputs.story_matrix }}
+      story_count: ${{ steps.get-stories.outputs.story_count }}
+    steps:
+      - name: Publish epic and stories to JIRA
+        run: |
+          cd ${{ env.SCRIPTS_DIR }}
+          ./generate-epic-and-user-stories.sh \
+            --brd-path "${{ inputs.new_brd_path }}" \
+            --existing-app-brd "${{ inputs.existing_brd_path }}" \
+            --existing-app-arch "${{ inputs.existing_tech_arch_path }}" \
+            --workspace-root "${{ env.WORKSPACE_ROOT }}" \
+            --git-repo "${{ inputs.git_repo }}" \
+            --policy-file "${{ env.POLICY_DIR }}/epic-stories-generation.policy.md" \
+            --publish-only
+
+      - name: Read story keys from JIRA artifacts
+        id: get-stories
+        run: |
+          JIRA_ARTIFACTS_FILE="${{ env.WORKSPACE_ROOT }}/sdlc-artifacts/epic-stories/jira-artifacts.json"
+
+          if [ ! -f "$JIRA_ARTIFACTS_FILE" ]; then
+            echo "Error: JIRA artifacts file not found at $JIRA_ARTIFACTS_FILE"
+            exit 1
+          fi
+
+          # Create matrix as JSON array with index for each story
+          STORY_MATRIX=$(jq -c '[.story_keys | to_entries | .[] | {story: .value, index: .key}]' "$JIRA_ARTIFACTS_FILE")
+          STORY_COUNT=$(jq -r '.story_count' "$JIRA_ARTIFACTS_FILE")
+
+          echo "story_matrix=$STORY_MATRIX" >> $GITHUB_OUTPUT
+          echo "story_count=$STORY_COUNT" >> $GITHUB_OUTPUT
+
+          echo "Story matrix: $STORY_MATRIX"
+          echo "Total story count: $STORY_COUNT"
+
+  process-stories:
+    name: "Process Story ${{ matrix.story }}"
+    needs: publish-epic
+    strategy:
+      matrix:
+        include: ${{ fromJson(needs.publish-epic.outputs.story_matrix) }}
+      max-parallel: 1
+    uses: ./.github/workflows/story-pipeline.yml
+    with:
+      story_id: ${{ matrix.story }}
+      story_index: ${{ matrix.index }}
+      story_matrix: ${{ needs.publish-epic.outputs.story_matrix }}
+      git_repo: ${{ inputs.git_repo }}
+      new_brd_path: ${{ inputs.new_brd_path }}
+      existing_brd_path: ${{ inputs.existing_brd_path }}
+      existing_tech_arch_path: ${{ inputs.existing_tech_arch_path }}
+      workspace_root: /home/azureuser/agentic-sdlc-workspace
+      scripts_dir: /home/azureuser/agentic-sdlc-workflow/agents
+      policy_dir: /home/azureuser/agentic-sdlc-workflow/agents/policies
+

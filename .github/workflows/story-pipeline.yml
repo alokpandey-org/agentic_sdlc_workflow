@@ -1,0 +1,164 @@
+name: Story Pipeline
+
+on:
+  workflow_call:
+    inputs:
+      story_id:
+        description: 'JIRA Story ID'
+        required: true
+        type: string
+      story_index:
+        description: 'Index of story in the list (0-based)'
+        required: true
+        type: number
+      story_matrix:
+        description: 'Full story matrix JSON'
+        required: true
+        type: string
+      git_repo:
+        description: 'Target Git Repository URL'
+        required: true
+        type: string
+      new_brd_path:
+        description: 'Path to new BRD file on runner'
+        required: true
+        type: string
+      existing_brd_path:
+        description: 'Path to existing BRD file on runner'
+        required: true
+        type: string
+      existing_tech_arch_path:
+        description: 'Path to existing tech architecture file on runner'
+        required: true
+        type: string
+      workspace_root:
+        description: 'Workspace root path'
+        required: true
+        type: string
+      scripts_dir:
+        description: 'Scripts directory path'
+        required: true
+        type: string
+      policy_dir:
+        description: 'Policy directory path'
+        required: true
+        type: string
+
+jobs:
+  implementation:
+    name: "Implementation"
+    runs-on: self-hosted
+    steps:
+      - name: Determine base branch
+        id: base-branch
+        run: |
+          STORY_INDEX=${{ inputs.story_index }}
+          
+          if [ $STORY_INDEX -eq 0 ]; then
+            BASE_BRANCH="main"
+          else
+            # Get previous story from matrix
+            PREV_INDEX=$((STORY_INDEX - 1))
+            PREV_STORY=$(echo '${{ inputs.story_matrix }}' | jq -r ".[$PREV_INDEX].story")
+            BASE_BRANCH="story/$PREV_STORY"
+          fi
+          
+          echo "base_branch=$BASE_BRANCH" >> $GITHUB_OUTPUT
+          echo "Base branch for ${{ inputs.story_id }}: $BASE_BRANCH"
+
+      - name: Run implementation agent
+        run: |
+          cd ${{ inputs.scripts_dir }}
+          ./generate-user-story-implementation.sh \
+            --workspace-root "${{ inputs.workspace_root }}" \
+            --jira-ticket-id "${{ inputs.story_id }}" \
+            --existing-app-brd "${{ inputs.existing_brd_path }}" \
+            --existing-app-arch "${{ inputs.existing_tech_arch_path }}" \
+            --new-brd "${{ inputs.new_brd_path }}" \
+            --git-repo "${{ inputs.git_repo }}" \
+            --base-branch "${{ steps.base-branch.outputs.base_branch }}" \
+            --policy-file "${{ inputs.policy_dir }}/implementation.policy.md"
+          
+          echo "Implementation completed for ${{ inputs.story_id }}"
+          echo "Branch: story/${{ inputs.story_id }}"
+
+  ut-generate:
+    name: "Generate Test Plan"
+    runs-on: self-hosted
+    needs: implementation
+    steps:
+      - name: Generate unit test plan
+        run: |
+          cd ${{ inputs.scripts_dir }}
+          ./generate-user-story-unit-tests.sh \
+            --workspace-root "${{ inputs.workspace_root }}" \
+            --jira-ticket-id "${{ inputs.story_id }}" \
+            --story-branch "story/${{ inputs.story_id }}" \
+            --existing-app-brd "${{ inputs.existing_brd_path }}" \
+            --existing-app-arch "${{ inputs.existing_tech_arch_path }}" \
+            --git-repo "${{ inputs.git_repo }}" \
+            --policy-file "${{ inputs.policy_dir }}/unit-tests.policy.md" \
+            --generate-only
+          
+          echo "Test plan generated at: ${{ inputs.workspace_root }}/sdlc-artifacts/unit-tests-${{ inputs.story_id }}/unit-test-plan.md"
+
+  review-test-plan:
+    name: "Review Test Plan"
+    runs-on: self-hosted
+    needs: ut-generate
+    environment: test-plan-review
+    steps:
+      - name: Test plan review checkpoint
+        run: |
+          echo "=========================================="
+          echo "Test Plan Review for ${{ inputs.story_id }}"
+          echo "=========================================="
+          echo "Review location: ${{ inputs.workspace_root }}/sdlc-artifacts/unit-tests-${{ inputs.story_id }}/unit-test-plan.md"
+          echo ""
+          echo "SSH to runner and review the test plan before approving"
+          echo "Test plan reviewed and approved for ${{ inputs.story_id }}"
+
+  ut-publish:
+    name: "Generate Test Code"
+    runs-on: self-hosted
+    needs: review-test-plan
+    steps:
+      - name: Generate unit test code
+        run: |
+          cd ${{ inputs.scripts_dir }}
+          ./generate-user-story-unit-tests.sh \
+            --workspace-root "${{ inputs.workspace_root }}" \
+            --jira-ticket-id "${{ inputs.story_id }}" \
+            --story-branch "story/${{ inputs.story_id }}" \
+            --existing-app-brd "${{ inputs.existing_brd_path }}" \
+            --existing-app-arch "${{ inputs.existing_tech_arch_path }}" \
+            --git-repo "${{ inputs.git_repo }}" \
+            --policy-file "${{ inputs.policy_dir }}/unit-tests.policy.md" \
+            --publish-only
+          
+          echo "Unit tests generated and committed to branch: story/${{ inputs.story_id }}"
+
+  pr-review:
+    name: "Review PR (Code + Tests)"
+    runs-on: self-hosted
+    needs: ut-publish
+    environment: pr-review
+    steps:
+      - name: PR review checkpoint
+        run: |
+          echo "=========================================="
+          echo "PR Review for ${{ inputs.story_id }}"
+          echo "=========================================="
+
+          PR_INFO_FILE="${{ inputs.workspace_root }}/sdlc-artifacts/implementation-${{ inputs.story_id }}/pr-info.json"
+
+          if [ -f "$PR_INFO_FILE" ]; then
+            PR_URL=$(jq -r '.pr_url' "$PR_INFO_FILE")
+            echo "Review PR at: $PR_URL"
+          fi
+
+          echo ""
+          echo "Review the complete PR (implementation + unit tests) before approving"
+          echo "Branch: story/${{ inputs.story_id }}"
+          echo "PR reviewed and approved for ${{ inputs.story_id }}"
+
